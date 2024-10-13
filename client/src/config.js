@@ -5,7 +5,7 @@ const API_BASE_URL = 'https://compressormanagement.onrender.com';
 
 const WHATSAPP_CONFIG = {
   url: 'https://cors-anywhere.herokuapp.com/https://app.messageautosender.com/api/v1/message/create',
-  apiKey: 'ce050613f5db5f31fa0fdf9c5bf8a980d42f1d81c390088745', // Add the API key here
+  apiKey: 'ce050613f5db5f31fa0fdf9c5bf8a980d42f1d81c390088745', 
 };
 
 export { API_BASE_URL, WHATSAPP_CONFIG };

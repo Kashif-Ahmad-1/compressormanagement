@@ -69,36 +69,34 @@ exports.forgotPassword = async (req, res) => {
       },
     });
 
+    // Construct the full URL for the password reset link
+    const resetUrl = `http://${process.env.HOST || 'localhost'}:${process.env.PORT || 5000}/reset/${resetToken}`;
+
     const mailOptions = {
       to: user.email,
       subject: 'Password Reset',
       text: `You are receiving this email because you (or someone else) requested a password reset. 
               Please click on the following link, or paste this into your browser to complete the process: 
-              http://localhost:3000/reset/${resetToken} 
+              ${resetUrl} 
               If you did not request this, please ignore this email.`,
     };
 
-    // Log email details for debugging
-    // console.log("Sending email to:", user.email);
-    // console.log("Email options:", mailOptions);
-
     await transporter.sendMail(mailOptions);
 
-      // Send WhatsApp message
-      const message = `You requested a password reset. Click here to reset: http://localhost:3000/reset/${resetToken}`;
-      await sendWhatsAppMessage(user.mobileNumber, message);
-
+    // Send WhatsApp message
+    const message = `You requested a password reset. Click here to reset: ${resetUrl}`;
+    await sendWhatsAppMessage(user.mobileNumber, message);
 
     res.status(200).json({ message: 'Password reset email sent' });
   } catch (error) {
     console.error("Error sending email:", error);
-    // Provide more specific error message
     if (error.response) {
       return res.status(500).json({ error: 'Failed to send email: ' + error.response });
     }
     res.status(500).json({ error: 'Failed to send email' });
   }
 };
+
 
 
 // Function to send WhatsApp message
