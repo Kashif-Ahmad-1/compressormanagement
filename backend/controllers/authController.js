@@ -69,11 +69,8 @@ exports.forgotPassword = async (req, res) => {
       },
     });
 
-   // Construct the reset URL based on the environment
-   const isLocal = process.env.NODE_ENV === 'development'; // Adjust as needed
-   const resetUrl = isLocal 
-     ? `http://localhost:${process.env.PORT || 5000}/reset/${resetToken}`
-     : `https://${process.env.HOST}/reset/${resetToken}`;
+    // Construct the full URL for the password reset link
+     const resetUrl = `https://${process.env.HOST}/reset/${resetToken}`;
 
     const mailOptions = {
       to: user.email,
