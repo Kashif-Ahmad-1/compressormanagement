@@ -1,0 +1,223 @@
+.appointment-page {
+  display: flex;
+  justify-content: space-between;
+  background-color: #f4f7fa;
+  padding: 20px;
+  flex-wrap: wrap; /* Allow wrapping of items */
+  margin-top: 50px;
+}
+
+.appointment-container {
+  max-width: 800px;
+  margin: auto;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  flex: 1; /* Make the center container take remaining space */
+  min-width: 300px; /* Minimum width for smaller screens */
+}
+
+.side-panel {
+  background-color: #e9ecef;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 0 10px; /* Space between panels and form */
+  flex: 0 0 200px; /* Fixed width for side panels */
+  max-height: 90vh; /* Max height for scrolling */
+  overflow-y: auto; /* Vertical scroll if content exceeds */
+}
+
+.left-panel {
+  /* Additional styling for left panel */
+}
+
+.right-panel {
+  /* Additional styling for right panel */
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.appointment-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+ 
+}
+
+
+label {
+  font-weight: boldz;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.input-field {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: border-color 0.3s;
+}
+
+.input-field:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.suggestions-list {
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 5px;
+  padding: 0;
+  list-style-type: none;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.suggestions-list li {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.suggestions-list li:hover {
+  background-color: #f0f0f0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.submit-button {
+  background-color: #007bff;
+  color: white;
+}
+
+.submit-button:hover {
+  background-color: #0056b3;
+}
+
+.draft-button {
+  background-color: #ffc107;
+  color: white;
+}
+
+.draft-button:hover {
+  background-color: #e0a800;
+}
+
+.back-button {
+  background-color: #6c757d;
+  color: white;
+}
+
+.back-button:hover {
+  background-color: #5a6268;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+.side-panel {
+  background-color: #f8f9fa; /* Light background */
+  border: 1px solid #ced4da; /* Border for definition */
+  border-radius: 8px; /* Rounded corners */
+  padding: 20px; /* Spacing inside the panel */
+  margin: 10px; /* Space around the panel */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Soft shadow */
+}
+
+.side-panel h3 {
+  color: #007bff; /* Title color */
+  margin-bottom: 15px; /* Space below the title */
+}
+
+.side-panel p,
+.side-panel ul {
+  color: #495057; /* Text color */
+  line-height: 1.6; /* Line height for readability */
+}
+
+.side-panel ul {
+  list-style-type: disc; /* Bulleted list */
+  padding-left: 20px; /* Indent the list */
+}
+
+.side-panel ul li {
+  margin-bottom: 10px; /* Space between list items */
+}
+
+.side-panel ul li:hover {
+  color: #007bff; /* Change color on hover */
+  cursor: pointer; /* Pointer cursor on hover */
+}
+
+#machineName, #engineer {
+  padding: 10px;
+}
+
+@media (max-width: 768px) {
+  .appointment-page {
+    flex-direction: column; /* Stack elements on small screens */
+    padding: 10px; /* Adjust padding for smaller screens */
+  }
+
+  .side-panel {
+    display: none; /* Hide side panels on mobile */
+  }
+
+  .appointment-container {
+    margin-top: 959px;
+    flex: 1 0 100%; /* Full width for the form on small screens */
+    /* Remove margins */
+    padding: 15px; /* Add some padding */
+    box-shadow: none; /* Remove shadow for a flatter design */
+  }
+
+  .form-row {
+    display: flex; /* Change to flex for better stacking */
+    flex-direction: column; /* Stack form fields */
+    gap: 0px; /* Add gap between fields */
+  }
+
+  .form-group {
+    width: 100%; /* Ensure form groups take full width */
+  }
+
+  button {
+    width: 100%; /* Full-width buttons */
+  }
+
+  .suggestions-list {
+    max-height: 120px; /* Limit suggestions list height */
+  }
+}

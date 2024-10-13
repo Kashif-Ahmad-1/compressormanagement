@@ -1,0 +1,88 @@
+/* General styling for the template manager */
+
+.template-manager {
+    max-width: 800px;
+    margin: 150px auto;
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+   
+  }
+  
+  .header {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 20px;
+  }
+  
+  .template-selection {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .radio-label {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  
+  .radio-label input {
+    margin-right: 8px;
+  }
+  
+  .template-card {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+  }
+  
+  .template-textarea {
+    width: 100%;
+    padding: 15px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    outline: none;
+    resize: none;
+    box-sizing: border-box;
+    margin-bottom: 20px;
+  }
+  
+  .template-textarea:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+  }
+  
+  .save-button {
+    display: block;
+    width: 200px;
+    padding: 10px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 0 auto;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .save-button:hover {
+    background-color: #2980b9;
+  }
+  
+  .save-button:active {
+    background-color: #21618c;
+  }
+  
+  @media (max-width: 768px) {
+    .template-selection {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+  
