@@ -1,6 +1,6 @@
 
 // const API_BASE_URL = 'http://localhost:5000';
-const API_BASE_URL = 'https://compressormanagement.onrender.com/';
+const API_BASE_URL = 'https://compressormanagement.onrender.com';
 // const API_BASE_URL = 'https://backend-2-amber.vercel.app';
 
 const WHATSAPP_CONFIG = {
