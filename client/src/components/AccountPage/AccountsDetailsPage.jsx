@@ -412,13 +412,22 @@ function AppointmentDetailsPage() {
                           fontSize: "1rem",
                           
                         }}>
-                      {appointment.document ? (
-                        <Button variant="outlined" color="primary" onClick={() => handleDownloadPDF(appointment)}>
-                          <Download />
-                        </Button>
-                      ) : (
-                        <Typography variant="body2" color="textSecondary">No Document</Typography>
-                      )}
+                       {appointment.document ? (
+                                <span
+                                  onClick={() =>
+                                    handleDownloadPDF(appointment.document)
+                                  }
+                                  style={{
+                                    cursor: "pointer",
+                                    color: "#007acc",
+                                    textDecoration: "underline",
+                                  }}
+                                >
+                                  <Download sx={{ color: "blue" }} />
+                                </span>
+                              ) : (
+                                " No Document"
+                              )}
                     </TableCell>
                   </TableRow>
                   {expandedRows.includes(index) && (

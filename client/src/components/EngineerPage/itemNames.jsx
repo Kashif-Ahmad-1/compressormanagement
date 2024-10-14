@@ -36,7 +36,7 @@ export const itemNames = [
     remark: "",
   },
   {
-    description: "Check oil separator cartridge diff. pressure",
+    description: "Check oil separator cartridge diff. pressure  <input type='text'  maxlength='5' style='width: 30px;height: 10px;' />",
     done: false,
     remark: "",
   },
@@ -123,18 +123,18 @@ export const itemNames = [
   },
   {
     description:
-      "Check for any Air / Oil leakages in the compressor<input type='text'  maxlength='5' style='width: 30px;height: 10px;' />",
+      "Check for any Air / Oil leakages in the compressor",
     done: false,
     remark: "",
   },
   {
-    description: "Check and maintain ZK filter Eco drain Valve <input type='text'  maxlength='5' style='width: 30px;height: 10px;' />",
+    description: "Check and maintain ZK filter Eco drain Valve ",
     done: false,
     remark: "",
   },
   {
     description:
-      "Test run, check conditions: start, idle, load and shut-down <input type='text'  maxlength='5' style='width: 30px;height: 10px;' />",
+      "Test run, check conditions: start, idle, load and shut-down ",
     done: false,
     remark: "",
   },

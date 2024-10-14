@@ -167,6 +167,13 @@ const deleteChecklist = async (req, res) => {
       return res.status(403).json({ message: 'You do not have permission to delete this checklist.' });
     }
 
+    // Delete the PDF from Cloudinary if it exists
+    if (checklist.pdfPath) {
+      // Extract the public ID from the pdfPath
+      const publicId = checklist.pdfPath.split('/').pop().split('.')[0]; // Assuming pdfPath is a URL
+      await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' }); // Use 'raw' for PDF files
+    }
+
     // Find and delete the checklist by ID
     const deletedChecklist = await Checklist.findByIdAndDelete(id);
 
@@ -183,6 +190,7 @@ const deleteChecklist = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 const downloadChecklist = async (req, res) => {
   try {
