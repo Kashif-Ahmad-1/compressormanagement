@@ -45,8 +45,8 @@ const Table = styled('table')(({ theme }) => ({
   '& th, & td': {
     padding: theme.spacing(1),
     borderBottom: `1px solid ${theme.palette.divider}`,
-    fontSize: '1rem',
-    fontWeight: '600',
+    fontSize: '1.2rem',
+    fontWeight: '400',
   },
   '& th': {
     backgroundColor: theme.palette.grey[200],
@@ -328,7 +328,7 @@ const AccountantPage = () => {
                 <th>Mobile Number</th>
                 <th>Address</th>
                 <th>Actions</th>
-                <th>Send</th>
+                <th>Password Reset</th>
               </tr>
             </thead>
             <tbody>
@@ -339,16 +339,16 @@ const AccountantPage = () => {
                   <td>{accountant.mobileNumber}</td>
                   <td>{accountant.address}</td>
                   <td>
-                    <IconButton onClick={() => handleEdit(accountant)}>
+                    <IconButton   color="secondary" onClick={() => handleEdit(accountant)}>
                       <Edit />
                     </IconButton>
 
-                    <IconButton onClick={() => handleDelete(accountant._id)}>
+                    <IconButton  color="error" onClick={() => handleDelete(accountant._id)}>
                       <Delete />
                     </IconButton>
                    
                   </td>
-                  <td> <IconButton onClick={() => handleSendResetLink(accountant.email)}>
+                  <td> <IconButton color="secondary" onClick={() => handleSendResetLink(accountant.email)}>
                       <Send />
                     </IconButton></td>
                 </tr>

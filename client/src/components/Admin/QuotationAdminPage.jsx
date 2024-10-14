@@ -50,8 +50,8 @@ const Table = styled("table")(({ theme }) => ({
     padding: theme.spacing(1),
     // textAlign: "left",
     borderBottom: `1px solid ${theme.palette.divider}`,
-    fontSize: "1rem", // Smaller font for mobile
-    fontWeight: "600",
+    fontSize: "1.2rem", // Smaller font for mobile
+    fontWeight: "400",
   },
   "& th": {
     backgroundColor: theme.palette.grey[200],

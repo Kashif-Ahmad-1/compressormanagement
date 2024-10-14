@@ -106,7 +106,7 @@ const sendWhatsAppMessage = async (mobileNumber, message) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Basic ' + Buffer.from('kashif2789:test@123').toString('base64'),
+        'x-api-key': process.env.WATSAPP_API_KEY,
       },
       body: JSON.stringify({
         receiverMobileNo: mobileNumber,

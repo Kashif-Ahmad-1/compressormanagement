@@ -45,8 +45,8 @@ const Table = styled('table')(({ theme }) => ({
   '& th, & td': {
     padding: theme.spacing(1),
     borderBottom: `1px solid ${theme.palette.divider}`,
-    fontSize: '1rem',
-    fontWeight: '600',
+    fontSize: '1.2rem',
+    fontWeight: '400',
   },
   '& th': {
     backgroundColor: theme.palette.grey[200],

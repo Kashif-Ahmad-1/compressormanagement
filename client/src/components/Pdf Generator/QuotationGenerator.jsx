@@ -325,10 +325,10 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
 
     const responseWhatsapp = await axios.post(WHATSAPP_CONFIG.url, {
       receiverMobileNo: mobileNumber,
-      message: [message], // Send the final message as an array
+      message: [message], 
     }, {
       headers: {
-        'x-api-key': WHATSAPP_CONFIG.apiKey, // Use the API key from the config
+        'x-api-key': WHATSAPP_CONFIG.apiKey, 
         'Content-Type': 'application/json',
       },
     });
@@ -351,29 +351,29 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
         <div className="form-row">
           <div className="form-group">
             <label>Buyer Name:</label>
-            <input type="text" name="buyerName" value={clientInfo.name} onChange={handleInputChange} />
+            <input style={{background:"lightgreen"}} type="text" name="buyerName" value={clientInfo.name} onChange={handleInputChange} readOnly/>
           </div>
           <div className="form-group">
             <label>Quotation No:</label>
-            <input type="text" name="quotationNo" value={formData.quotationNo} readOnly />
+            <input style={{background:"lightgreen"}} type="text" name="quotationNo" value={formData.quotationNo} readOnly />
           </div>
           <div className="form-group">
             <label>Date:</label>
-            <input type="text" name="docDate" value={formData.docDate} readOnly />
+            <input  style={{background:"lightgreen"}} type="text" name="docDate" value={formData.docDate} readOnly />
           </div>
         </div>
         <div className="form-group">
           <label>Address:</label>
-          <input type="text" name="address" value={formData.address} onChange={handleInputChange} />
+          <input style={{background:"lightgreen"}} type="text" name="address" value={formData.address}  readOnly/>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label>Contact Person:</label>
-            <input type="text" name="contactPerson" value={clientInfo.contactPerson} onChange={handleInputChange} />
+            <input style={{background:"lightgreen"}} type="text" name="contactPerson" value={clientInfo.contactPerson}  readOnly/>
           </div>
           <div className="form-group">
             <label>Mobile No:</label>
-            <input type="text" name="mobileNo" value={formData.mobileNo} onChange={handleInputChange} />
+            <input style={{background:"lightgreen"}} type="text" name="mobileNo" value={formData.mobileNo}  readOnly/>
           </div>
         </div>
 
@@ -436,7 +436,7 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
         <div className="form-row">
           <div className="form-group">
             <label>Total Amount:</label>
-            <input type="number" value={formData.totalWithGST.toFixed(2)} readOnly />
+            <input style={{background:"lightgreen"}} type="number" value={formData.totalWithGST.toFixed(2)} readOnly />
           </div>
           <div className="form-group">
             <label>Advance Payment Details:</label>
@@ -448,7 +448,7 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
           </div>
           <div className="form-group">
             <label>Authorised Signatory:</label>
-            <input type="text" name="authorisedSignatory" value={formData.authorisedSignatory} onChange={handleInputChange} />
+            <input style={{background:"lightgreen"}} type="text" name="authorisedSignatory" value={formData.authorisedSignatory}  />
           </div>
         </div>
         <div className="button-container">

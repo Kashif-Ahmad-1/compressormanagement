@@ -405,25 +405,25 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
         <div className="form-row">
           <div className="form-group">
             <label>Buyer Name:</label>
-            <input type="text" name="buyerName" value={formData.clientInfo.name} onChange={handleChange} />
+            <input type="text" name="buyerName" value={formData.clientInfo.name} style={{background:"lightgreen"}} readOnly />
           </div>
           <div className="form-group">
             <label>Quotation No:</label>
-            <input type="text" name="quotationNo" value={formData.quotationNo} readOnly />
+            <input type="text" name="quotationNo" value={formData.quotationNo} style={{background:"lightgreen"}} readOnly />
           </div>
         </div>
         <div className="form-group">
           <label>Address:</label>
-          <input type="text" name="address" value={formData.clientInfo.address} onChange={handleChange} />
+          <input type="text" name="address" value={formData.clientInfo.address} style={{background:"lightgreen"}} readOnly />
         </div>
         <div className="form-row">
           <div className="form-group">
             <label>Contact Person:</label>
-            <input type="text" name="contactPerson" value={formData.clientInfo.contactPerson} onChange={handleChange} />
+            <input type="text" name="contactPerson" value={formData.clientInfo.contactPerson} style={{background:"lightgreen"}} readOnly />
           </div>
           <div className="form-group">
             <label>Mobile No:</label>
-            <input type="text" name="mobileNo" value={formData.clientInfo.phone} onChange={handleChange} />
+            <input type="text" name="mobileNo" value={formData.clientInfo.phone} style={{background:"lightgreen"}} readOnly />
           </div>
         </div>
         <h4>Item Details</h4>
@@ -500,7 +500,7 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
         <div className="form-row">
           <div className="form-group">
             <label>Total Quotation Amount:</label>
-            <input type="number" name="totalAmount" value={formData.quotationAmount} readOnly />
+            <input type="number" name="totalAmount" value={formData.quotationAmount} style={{background:"lightgreen"}} readOnly />
           </div>
         </div>
         <div className="button-container">

@@ -20,7 +20,7 @@ const app = express();
 
 
 app.use(cors({
-    origin: ['http://localhost:5000', 'https://carservice-frontend-1i3i.vercel.app'], // Allow both localhost and deployed frontend
+    origin: ['http://localhost:3000','http://localhost:5000', 'https://carservice-frontend-1i3i.vercel.app'], // Allow both localhost and deployed frontend
     methods: ['GET', 'POST', 'PUT', 'PATCH','DELETE','OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true, // If you need to send cookies

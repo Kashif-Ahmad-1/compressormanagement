@@ -234,7 +234,7 @@ const ServiceRequestDocPage = () => {
                     <th className="sticky-header">Mobile Number</th>
                     <th className="sticky-header">Document</th>
                     <th className="sticky-header">Actions</th>
-                    <th className="sticky-header">Send</th>
+                    <th className="sticky-header">Send PDF to Client</th>
                   </tr>
                 </thead>
                 <tbody>
