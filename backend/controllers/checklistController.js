@@ -43,10 +43,16 @@ const saveChecklist = async (req, res) => {
     // Upload file to Cloudinary
     let pdfPath = null;
     if (req.file) {
+      const originalFileName = req.file.originalname.split('.')[0]; // Get the original file name without extension
+
       // Use a promise to wait for the upload to complete
       pdfPath = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { resource_type: "auto",folder: "service record" },
+          {
+            resource_type: "auto", // Use "raw" for non-image files
+            public_id: originalFileName, // Set public ID to original file name
+            folder: "service record"
+          },
           (error, result) => {
             if (error) {
               console.error('Cloudinary upload error:', error);
@@ -62,8 +68,8 @@ const saveChecklist = async (req, res) => {
       });
     }
 
-     // Increment invcdocument
-     const counter = await Counter.findOneAndUpdate(
+    // Increment invcdocument
+    const counter = await Counter.findOneAndUpdate(
       { name: "checklistInvcdocument" },
       { $inc: { count: 1 } },
       { new: true, upsert: true } // Create if it doesn't exist
@@ -77,7 +83,7 @@ const saveChecklist = async (req, res) => {
       documentNumber,
       pdfPath, // Ensure this is set to the Cloudinary URL
       createdBy: req.user.userId,
-      invcdocument: counter.count, 
+      invcdocument: counter.count,
     });
 
     // Save the checklist to the database
@@ -98,6 +104,7 @@ const saveChecklist = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 const getAllChecklists = async (req, res) => {
   try {

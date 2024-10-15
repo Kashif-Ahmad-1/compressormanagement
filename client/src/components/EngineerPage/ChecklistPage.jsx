@@ -237,8 +237,12 @@ const ChecklistPage = () => {
         // Generate the PDF
         const pdf = await html2pdf().from(input).set(options).output('blob');
 
+
+        const clientName = clientInfo.name || "Client"; // Fallback if name is not available
+        const documentNumbers = documentNumber || "Document"; // Fallback if invoice number is not available
+        const filename = `service_Record_no_${documentNumbers}_${clientName}.pdf`.replace(/\s+/g, '_');
         // Prepare PDF for upload
-        const pdfFile = new File([pdf], "checklist.pdf", { type: "application/pdf" });
+        const pdfFile = new File([pdf], filename, { type: "application/pdf" });
         const formData = new FormData();
         formData.append("pdf", pdfFile);
         formData.append("checklistData", JSON.stringify({
