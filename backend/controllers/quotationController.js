@@ -2,17 +2,23 @@ const Quotation = require("../models/Quotation");
 const multer = require("multer");
 const path = require("path");
 const Appointment = require("../models/Appointment");
-const cloudinary = require("cloudinary").v2;
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const { google } = require('googleapis');
+const { PassThrough } = require('stream'); 
+// Initialize Google Drive API
+const drive = google.drive('v3');
 
 // Multer configuration for file uploads
 const storage = multer.memoryStorage(); // Use memory storage to handle uploads directly
 const upload = multer({ storage });
+
+// Authenticate Google Drive API
+async function authenticateGoogleDrive() {
+  const auth = new google.auth.GoogleAuth({
+    credentials: JSON.parse(process.env.GOOGLE_DRIVE_KEY),
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+  });
+  return await auth.getClient();
+}
 
 // Save quotation and link it to an existing appointment
 const saveQuotation = async (req, res) => {
@@ -22,48 +28,69 @@ const saveQuotation = async (req, res) => {
       return res.status(400).json({ message: 'Quotation data is required.' });
     }
 
-    let appointmentId, clientInfo, quotationNo, quotationAmount, items,invoiceNo,machineName,engineerMobile;
+    let appointmentId, clientInfo, quotationNo, quotationAmount, items, invoiceNo, machineName, engineerMobile;
 
     // Attempt to parse quotationData
     try {
-      const { appointmentId: id, clientInfo: info, quotationNo: string, quotationAmount: amount, items: itemList ,invoiceNo: invoice,machineName:Name,engineerMobile:Mobile} = JSON.parse(req.body.quotationData);
+      const { appointmentId: id, clientInfo: info, quotationNo: string, quotationAmount: amount, items: itemList, invoiceNo: invoice, machineName: Name, engineerMobile: Mobile } = JSON.parse(req.body.quotationData);
       appointmentId = id;
       clientInfo = info;
       quotationNo = string;
       quotationAmount = amount; 
       items = itemList; 
       invoiceNo = invoice;
-      machineName=Name;
-      engineerMobile= Mobile;
+      machineName = Name;
+      engineerMobile = Mobile;
     } catch (jsonError) {
       console.log('JSON parsing error:', jsonError);
       return res.status(400).json({ message: 'Invalid JSON format for quotation data.' });
     }
 
-    // Upload file to Cloudinary
+    // Upload file to Google Drive
     let pdfPath = null;
     if (req.file) {
-      // Use a promise to wait for the upload to complete
-      pdfPath = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { resource_type: "auto" ,folder: "quotations"},
-          (error, result) => {
-            if (error) {
-              console.error('Cloudinary upload error:', error);
-              reject(error);
-            } else {
-              const cleanUrl = result.secure_url.replace(/\/v[^\/]+\//, '/');
-          resolve(cleanUrl);
+      const authClient = await authenticateGoogleDrive();
+      const clientName = clientInfo.name.replace(/\s+/g, '_'); // Replace spaces with underscores
+      const fileName = `${quotationNo}_${clientName}.pdf`;
+      const fileMetadata = {
+        name: fileName, // Use the quotation number or other relevant info
+        mimeType: 'application/pdf',
+        parents: [process.env.GOOGLE_DRIVE_QUOTATION_ID],  // Replace with your folder ID
+      };
 
-            }
-          }
-        );
+      const bufferStream = new PassThrough();
+      bufferStream.end(req.file.buffer); // Convert buffer to stream
 
-        stream.end(req.file.buffer); // Send the file buffer to Cloudinary
-      });
+      const media = {
+        mimeType: 'application/pdf',
+        body: bufferStream,
+      };
+
+      try {
+        const driveResponse = await drive.files.create({
+          auth: authClient,
+          requestBody: fileMetadata,
+          media: media,
+        });
+
+        // Set permissions to make the file accessible
+        await drive.permissions.create({
+          auth: authClient,
+          fileId: driveResponse.data.id,
+          requestBody: {
+            role: 'reader', // Allows read access
+            type: 'anyone', // Makes the file publicly accessible
+          },
+        });
+
+        pdfPath = `https://drive.google.com/uc?id=${driveResponse.data.id}`; // Get the file link
+      } catch (error) {
+        console.error('Google Drive upload error:', error.message || error);
+        return res.status(500).json({ message: error.message || 'Failed to upload PDF to Google Drive.' });
+      }
     }
 
-    // Create a new Quotation instance, with the `createdBy` set to the authenticated engineer's ID
+    // Create a new Quotation instance
     const newQuotation = new Quotation({
       clientInfo,
       appointmentId,
@@ -79,9 +106,8 @@ const saveQuotation = async (req, res) => {
     });
 
     const savedQuotation = await newQuotation.save();
-   
-
     const appointment = await Appointment.findById(appointmentId);
+
     if (!appointment) {
       console.log('Appointment not found for ID:', appointmentId);
       return res.status(404).json({ message: "Appointment not found." });
@@ -96,6 +122,7 @@ const saveQuotation = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 
 const getAllQuotations = async (req, res) => {
@@ -137,28 +164,47 @@ const editQuotation = async (req, res) => {
     };
 
     // Handle PDF upload if a new file is provided
+    let pdfPath = null;
     if (req.file) {
-      // Upload new PDF to Cloudinary
-      const pdfPath = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { resource_type: "auto" ,folder: "quotations"},
-          (error, result) => {
-            if (error) {
-              console.error('Cloudinary upload error:', error);
-              reject(error);
-            } else {
-              const cleanUrl = result.secure_url.replace(/\/v[^\/]+\//, '/');
-          resolve(cleanUrl);
+      const authClient = await authenticateGoogleDrive();
+      const clientName = clientInfo.name.replace(/\s+/g, '_'); // Replace spaces with underscores
+      const fileName = `${quotationNo}_${clientName}.pdf`;
+      const fileMetadata = {
+        name: fileName, // Use the quotation number or other relevant info
+        mimeType: 'application/pdf',
+        parents: [process.env.GOOGLE_DRIVE_QUOTATION_ID], // Replace with your folder ID
+      };
 
-            }
-          }
-        );
+      const bufferStream = new PassThrough();
+      bufferStream.end(req.file.buffer); // Convert buffer to stream
 
-        stream.end(req.file.buffer);
-      });
-      
-      // Update the pdfPath in updatedData
-      updatedData.pdfPath = pdfPath; // Ensure you have a field for storing this
+      const media = {
+        mimeType: 'application/pdf',
+        body: bufferStream,
+      };
+
+      try {
+        const driveResponse = await drive.files.create({
+          auth: authClient,
+          requestBody: fileMetadata,
+          media: media,
+        });
+
+        // Set permissions to make the file accessible
+        await drive.permissions.create({
+          auth: authClient,
+          fileId: driveResponse.data.id,
+          requestBody: {
+            role: 'reader', // Allows read access
+            type: 'anyone', // Makes the file publicly accessible
+          },
+        });
+
+        pdfPath = `https://drive.google.com/uc?id=${driveResponse.data.id}`; // Get the file link
+      } catch (error) {
+        console.error('Google Drive upload error:', error.message || error);
+        return res.status(500).json({ message: error.message || 'Failed to upload PDF to Google Drive.' });
+      }
     }
 
     // Update the quotation with the new data
@@ -189,24 +235,51 @@ const updateQuotationPdf = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded.' });
     }
 
+   
     // Upload new PDF to Cloudinary
-    const pdfPath = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { resource_type: "auto",folder: "quotations" },
-        (error, result) => {
-          if (error) {
-            console.error('Cloudinary upload error:', error);
-            reject(error);
-          } else {
-            const cleanUrl = result.secure_url.replace(/\/v[^\/]+\//, '/');
-          resolve(cleanUrl);
+    let pdfPath = null;
+    if (req.file) {
+      const authClient = await authenticateGoogleDrive();
+      let quotationNo=quotation.quotationNo;
+      const clientName = quotation.clientInfo.name.replace(/\s+/g, '_'); 
+      const fileName = `${quotationNo}_${clientName}.pdf`;
+      const fileMetadata = {
+        name: fileName, // Use the quotation number or other relevant info
+        mimeType: 'application/pdf',
+        parents: [process.env.GOOGLE_DRIVE_QUOTATION_ID], // Replace with your folder ID
+      };
 
-          }
-        }
-      );
+      const bufferStream = new PassThrough();
+      bufferStream.end(req.file.buffer); // Convert buffer to stream
 
-      stream.end(req.file.buffer);
-    });
+      const media = {
+        mimeType: 'application/pdf',
+        body: bufferStream,
+      };
+
+      try {
+        const driveResponse = await drive.files.create({
+          auth: authClient,
+          requestBody: fileMetadata,
+          media: media,
+        });
+
+        // Set permissions to make the file accessible
+        await drive.permissions.create({
+          auth: authClient,
+          fileId: driveResponse.data.id,
+          requestBody: {
+            role: 'reader', // Allows read access
+            type: 'anyone', // Makes the file publicly accessible
+          },
+        });
+
+        pdfPath = `https://drive.google.com/uc?id=${driveResponse.data.id}`; // Get the file link
+      } catch (error) {
+        console.error('Google Drive upload error:', error.message || error);
+        return res.status(500).json({ message: error.message || 'Failed to upload PDF to Google Drive.' });
+      }
+    }
 
     // Update the quotation's pdfPath with the new one
     quotation.pdfPath = pdfPath;

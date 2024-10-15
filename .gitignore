@@ -24,3 +24,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+backend/drivekey.json
+backend/controllers/drivekey.json

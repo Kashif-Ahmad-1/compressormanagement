@@ -295,7 +295,7 @@ const ChecklistPage = () => {
             printButton3.style.display = "block";
         }
 
-        // window.location.reload();
+        window.location.reload();
     }
 };
 

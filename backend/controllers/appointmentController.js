@@ -3,30 +3,23 @@ const path = require("path");
 const Appointment = require("../models/Appointment");
 const User = require("../models/User");
 const Company = require("../models/Company");
-const cloudinary = require("cloudinary").v2;
-// Create an instance of multer
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, "uploads/"); // Ensure this folder exists
-//   },
-//   filename: (req, file, cb) => {
-//     cb(null, ${Date.now()}-${file.originalname});
-//   },
-// });
+const { google } = require('googleapis');
+const { PassThrough } = require('stream'); 
 
-// const upload = multer({ storage });
-
-
-// Cloudinary configuration
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const drive = google.drive('v3');
 
 // Multer configuration for file uploads
 const storage = multer.memoryStorage(); // Use memory storage to handle uploads directly
 const upload = multer({ storage });
+
+// Authenticate Google Drive API
+async function authenticateGoogleDrive() {
+  const auth = new google.auth.GoogleAuth({
+    credentials: JSON.parse(process.env.GOOGLE_DRIVE_KEY),
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+  });
+  return await auth.getClient();
+}
 
 // Accountant creates an appointment
 exports.createAppointment = async (req, res) => {
@@ -77,25 +70,49 @@ exports.createAppointment = async (req, res) => {
       await company.save();
     }
 
-    // Upload file to Cloudinary
-    let document = null;
-    if (req.file) {
-      document = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { resource_type: "auto" },
-          (error, result) => {
-            if (error) {
-              console.error('Cloudinary upload error:', error);
-              reject(error);
-            } else {
-              resolve(result.secure_url); // Get the uploaded file's URL
-            }
-          }
-        );
+   // Upload file to Google Drive
+   let document = null;
+   if (req.file) {
+     const authClient = await authenticateGoogleDrive();
+     const clientNames = clientName.replace(/\s+/g, '_'); // Replace spaces with underscores
+     const fileName = `${invoiceNumber}.pdf`;
+     const fileMetadata = {
+       name: fileName, // Use the quotation number or other relevant info
+       mimeType: 'application/pdf',
+       parents: [process.env.GOOGLE_DRIVE_INVOICEDOC_ID], // Replace with your folder ID
+     };
 
-        stream.end(req.file.buffer); // Send the file buffer to Cloudinary
-      });
-    }
+     const bufferStream = new PassThrough();
+     bufferStream.end(req.file.buffer); // Convert buffer to stream
+
+     const media = {
+       mimeType: 'application/pdf',
+       body: bufferStream,
+     };
+
+     try {
+       const driveResponse = await drive.files.create({
+         auth: authClient,
+         requestBody: fileMetadata,
+         media: media,
+       });
+
+       // Set permissions to make the file accessible
+       await drive.permissions.create({
+         auth: authClient,
+         fileId: driveResponse.data.id,
+         requestBody: {
+           role: 'reader', // Allows read access
+           type: 'anyone', // Makes the file publicly accessible
+         },
+       });
+
+       document = `https://drive.google.com/uc?id=${driveResponse.data.id}`; // Get the file link
+     } catch (error) {
+       console.error('Google Drive upload error:', error.message || error);
+       return res.status(500).json({ message: error.message || 'Failed to upload PDF to Google Drive.' });
+     }
+   }
 
     const appointment = new Appointment({
       clientName,

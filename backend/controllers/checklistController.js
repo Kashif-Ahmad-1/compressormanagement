@@ -4,20 +4,23 @@ const Counter = require("../models/Counter");
 const path = require("path");
 const Appointment = require("../models/Appointment");
 require('dotenv').config();
+const { google } = require('googleapis');
+const { PassThrough } = require('stream'); 
 
-
-const cloudinary = require("cloudinary").v2;
-
-// Cloudinary configuration
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const drive = google.drive('v3');
 
 // Multer configuration for file uploads
 const storage = multer.memoryStorage(); // Use memory storage to handle uploads directly
 const upload = multer({ storage });
+
+// Authenticate Google Drive API
+async function authenticateGoogleDrive() {
+  const auth = new google.auth.GoogleAuth({
+    credentials: JSON.parse(process.env.GOOGLE_DRIVE_KEY),
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+  });
+  return await auth.getClient();
+}
 
 // Save checklist and link it to an existing appointment
 const saveChecklist = async (req, res) => {
@@ -42,33 +45,49 @@ const saveChecklist = async (req, res) => {
       return res.status(400).json({ message: 'Invalid JSON format for checklist data.' });
     }
 
-    // Upload file to Cloudinary
-    let pdfPath = null;
-    if (req.file) {
-      const originalFileName = req.file.originalname.split('.')[0]; // Get the original file name without extension
+   // Upload file to Google Drive
+   let pdfPath = null;
+   if (req.file) {
+     const authClient = await authenticateGoogleDrive();
+     const clientName = clientInfo.name.replace(/\s+/g, '_'); // Replace spaces with underscores
+     const fileName = `${invoiceNo}_${clientName}.pdf`;
+     const fileMetadata = {
+       name: fileName, // Use the quotation number or other relevant info
+       mimeType: 'application/pdf',
+       parents: [process.env.GOOGLE_DRIVE_SERVICE_ID], // Replace with your folder ID
+     };
 
-      // Use a promise to wait for the upload to complete
-      pdfPath = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            resource_type: "auto", // Use "raw" for non-image files
-            public_id: originalFileName, // Set public ID to original file name
-            folder: "service record"
-          },
-          (error, result) => {
-            if (error) {
-              console.error('Cloudinary upload error:', error);
-              reject(error);
-            } else {
-              const cleanUrl = result.secure_url.replace(/\/v[^\/]+\//, '/');
-              resolve(cleanUrl);
-            }
-          }
-        );
+     const bufferStream = new PassThrough();
+     bufferStream.end(req.file.buffer); // Convert buffer to stream
 
-        stream.end(req.file.buffer); // Send the file buffer to Cloudinary
-      });
-    }
+     const media = {
+       mimeType: 'application/pdf',
+       body: bufferStream,
+     };
+
+     try {
+       const driveResponse = await drive.files.create({
+         auth: authClient,
+         requestBody: fileMetadata,
+         media: media,
+       });
+
+       // Set permissions to make the file accessible
+       await drive.permissions.create({
+         auth: authClient,
+         fileId: driveResponse.data.id,
+         requestBody: {
+           role: 'reader', // Allows read access
+           type: 'anyone', // Makes the file publicly accessible
+         },
+       });
+
+       pdfPath = `https://drive.google.com/uc?id=${driveResponse.data.id}`; // Get the file link
+     } catch (error) {
+       console.error('Google Drive upload error:', error.message || error);
+       return res.status(500).json({ message: error.message || 'Failed to upload PDF to Google Drive.' });
+     }
+   }
 
     // Increment invcdocument
     const counter = await Counter.findOneAndUpdate(
