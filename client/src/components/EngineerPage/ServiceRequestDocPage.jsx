@@ -143,14 +143,14 @@ const ServiceRequestDocPage = () => {
     }
   };
 
-  const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
+  const handleSendPdfToMobile = async (pdfUrl, mobileNumber,companyName,MachineName,Technician,engineerMobile) => {
     try {
       // Fetch templates from the backend
       const response = await axios.get(`${API_BASE_URL}/api/templates`); 
       const { template1 } = response.data; 
   
       // Use the message template function with the PDF URL
-      const message = MessageTemplate(pdfUrl, template1); // Replace {pdfUrl} with the actual URL
+      const message = MessageTemplate(pdfUrl, template1,companyName,MachineName,Technician,engineerMobile); // Replace {pdfUrl} with the actual URL
   
       const responseWhatsapp = await axios.post(WHATSAPP_CONFIG.url, {
         receiverMobileNo: mobileNumber,
@@ -270,7 +270,7 @@ const ServiceRequestDocPage = () => {
                           <IconButton
                             variant="contained"
                             color="primary"
-                            onClick={() => handleSendPdfToMobile(checklist.pdfPath, checklist.clientInfo?.phone)}
+                            onClick={() => handleSendPdfToMobile(checklist.pdfPath, checklist.clientInfo?.phone,checklist.clientInfo?.name,checklist.machineName,checklist.clientInfo?.engineer,checklist.engineerMobile)}
                             size="small"
                           >
                            <Send fontSize="small" />

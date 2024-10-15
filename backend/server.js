@@ -14,7 +14,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs'); // Add this line at the top
 const templateRoutes = require('./routes/templateRoutes');
-
+const sparepartRoutes = require('./routes/sparepartRoutes');
 dotenv.config();
 const app = express();
 
@@ -39,6 +39,7 @@ app.use('/api/companies', companyRoutes);
 app.use("/api/checklist", checklistRoutes);
 app.use("/api/quotations", quotationRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/spareparts', sparepartRoutes);
 // Serve static files from the "uploads" directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

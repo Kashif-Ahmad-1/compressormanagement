@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef,useEffect } from "react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import "./PdfGenerator.css";
@@ -6,7 +6,7 @@ import { useLocation } from "react-router-dom";
 import axios from "axios";
 import logo from './comp-logo.jpeg';
 import {API_BASE_URL,WHATSAPP_CONFIG} from './../../config';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import MessageTemplate from "../MessageTemplate";
 import Footer from "../Footer";
 import {
@@ -40,8 +40,9 @@ const QuotationGenerator = () => {
   const formRef = useRef();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { clientName, contactPerson, address, mobileNo, appointmentId,invoiceNumber,engineer } = location.state || {};
-
+  const { clientName, contactPerson, address, mobileNo, appointmentId,invoiceNumber,engineer,engineerMobile,machineName } = location.state || {};
+  const [spareParts, setSpareParts] = useState([]);
+  const [showSpareParts, setShowSpareParts] = useState(false);
   const generateQuotationNo = () => "QT" + Math.floor(Math.random() * 100000);
   const formatDate = (date) => date.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit" });
 
@@ -76,6 +77,28 @@ const QuotationGenerator = () => {
     }
   };
 
+   // Fetch spare parts from backend
+   useEffect(() => {
+    const fetchSpareParts = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/spareparts`);
+        setSpareParts(response.data);
+      } catch (error) {
+        console.error('Error fetching spare parts:', error);
+      }
+    };
+    fetchSpareParts();
+  }, []);
+  const handleSparePartSelect = (sparePart) => {
+    setItemData({
+      itemName: sparePart.name,
+      quantity: sparePart.quantity,
+      rate: sparePart.price,
+    });
+    setShowSpareParts(false); // Close spare parts list
+  };
+
+
   const handleItemChange = (e) => {
     const { name, value } = e.target;
     setItemData((prev) => ({
@@ -84,8 +107,36 @@ const QuotationGenerator = () => {
     }));
   };
 
-  const addItem = () => {
+
+
+  
+
+  const addItem = async () => {
     if (itemData.itemName && itemData.quantity && itemData.rate) {
+      // Check if the spare part already exists
+      const existingItem = spareParts.find(part => part.name === itemData.itemName);
+
+      if (!existingItem) {
+        // Create new spare part in backend
+        await axios.post(`${API_BASE_URL}/api/spareparts`, {
+          name: itemData.itemName,
+          quantity: itemData.quantity,
+          
+          price: parseFloat(itemData.price),
+        });
+
+        // Fetch updated spare parts
+        const response = await axios.get(`${API_BASE_URL}/api/spareparts`);
+        setSpareParts(response.data);
+      } else {
+        // If exists, you can set the quantity and rate as needed
+        setItemData({
+          ...itemData,
+          quantity: existingItem.quantity, // or any relevant logic
+          rate: existingItem.price, // or any relevant logic
+        });
+      }
+
       const quantity = parseFloat(itemData.quantity);
       const rate = parseFloat(itemData.rate);
       const total = quantity * rate;
@@ -98,13 +149,12 @@ const QuotationGenerator = () => {
         const totalAmount = calculateTotalAmount(updatedItems);
         const totalWithGST = calculateTotalWithGST(totalAmount, prevData.gst);
         
-        // Update quotationAmount in formData
         return {
           ...prevData,
           items: updatedItems,
           totalAmount,
           totalWithGST,
-          quotationAmount: totalWithGST // Store total with GST in quotationAmount
+          quotationAmount: totalWithGST,
         };
       });
       setItemData({ itemName: "", quantity: "", rate: "" });
@@ -150,6 +200,8 @@ const QuotationGenerator = () => {
     validity: "",
     authorisedSignatory: engineer || "",
     engineer: engineer || "",
+    machineName: machineName || "",
+    engineerMobile: engineerMobile || "",
   });
 
 
@@ -286,9 +338,11 @@ const QuotationGenerator = () => {
     quotationNo: formData.quotationNo,
     items: formData.items,
     invoiceNo: formData.invoiceNumber,
-    quotationAmount: formData.quotationAmount 
+    quotationAmount: formData.quotationAmount,
+    engineerMobile: formData.engineerMobile,
+    machineName: formData.machineName, 
   }));
-
+ 
   try {
     const token = localStorage.getItem("token");
     const response = await axios.post(`${API_BASE_URL}/api/quotations`, formDatas, {
@@ -302,10 +356,12 @@ const QuotationGenerator = () => {
     const pdfUrl = response.data.quotation.pdfPath; 
     console.log("Extracted PDF URL:", pdfUrl); 
    
-   
-         // Send the PDF URL to WhatsApp
-         console.log("Sending PDF to mobile:", pdfUrl, "to", clientInfo.phone); // Debugging line
-         await handleSendPdfToMobile(pdfUrl, clientInfo.phone);
+    const companyName = clientName
+    const MachineName = machineName
+    const Technician = engineer
+    const engmobileNumber = engineerMobile
+         console.log("Sending PDF to mobile:", pdfUrl, "to", clientInfo.phone,companyName,MachineName,Technician,engmobileNumber); // Debugging line
+         await handleSendPdfToMobile(pdfUrl, clientInfo.phone,companyName,MachineName,Technician,engmobileNumber);
          toast.success("PDF sent to mobile successfully!");
   } catch (error) {
     console.error("Error uploading quotation and PDF:", error);
@@ -314,15 +370,14 @@ const QuotationGenerator = () => {
 };
 
 
-const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
+const handleSendPdfToMobile = async (pdfUrl, mobileNumber,companyName,MachineName,Technician,engmobileNumber) => {
   try {
     // Fetch templates from the backend
     const response = await axios.get(`${API_BASE_URL}/api/templates`); 
     const { template2 } = response.data; 
 
     // Use the message template function with the PDF URL
-    const message = MessageTemplate(pdfUrl, template2); // Replace {pdfUrl} with the actual URL
-
+    const message = MessageTemplate(pdfUrl, template2,companyName,MachineName,Technician,engmobileNumber); 
     const responseWhatsapp = await axios.post(WHATSAPP_CONFIG.url, {
       receiverMobileNo: mobileNumber,
       message: [message], 
@@ -407,30 +462,67 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
 
         <h4>Add New Item</h4>
         <div className="form-row">
-          <div className="form-group">
-            <label>Item Name:</label>
-            <input type="text" name="itemName" value={itemData.itemName} onChange={handleItemChange} />
-          </div>
-          <div className="form-group">
-            <label>Quantity:</label>
-            <input type="number" name="quantity" value={itemData.quantity} onChange={handleItemChange} />
-          </div>
-          <div className="form-group">
-            <label>Rate:</label>
-            <input type="number" name="rate" value={itemData.rate} onChange={handleItemChange} />
-          </div>
-          <div className="form-group">
-            <label>GST (%):</label>
-            <input type="number" name="gst" value={formData.gst} onChange={handleInputChange} />
-          </div>
-          <div className="form-group">
-            <label>Total:</label>
-            <input type="number" value={(itemData.quantity * itemData.rate * (1 + formData.gst / 100)).toFixed(2) || 0} readOnly />
-          </div>
-          <button type="button" onClick={addItem}>
-            Add Item
-          </button>
+  <div className="form-group">
+    <label>Item Name:</label>
+    <div style={{ position: 'relative' }}>
+      <input
+        type="text"
+        name="itemName"
+        value={itemData.itemName}
+        onChange={handleItemChange}
+        onFocus={() => setShowSpareParts(true)}
+        style={{ paddingRight: '30px' }}
+      />
+      <span
+        style={{
+          position: 'absolute',
+          right: '10px',
+          top: '50%',
+          transform: 'translateY(-50%)', // Center the icon vertically
+          cursor: 'pointer',
+          color: '#007bff', // Icon color
+          fontSize: '16px', // Adjust size as needed
+        }}
+        
+        onClick={() => setShowSpareParts(!showSpareParts)}
+      >
+        +
+      </span>
+      {showSpareParts && (
+        <div className="spare-parts-list" style={{ position: 'absolute', zIndex: 1, background: 'white', border: '1px solid #ccc', maxHeight: '150px', overflowY: 'auto' }}>
+          {spareParts.map((part) => (
+            <div
+              key={part._id}
+              onClick={() => handleSparePartSelect(part)}
+              style={{ padding: '8px', cursor: 'pointer' }}
+            >
+              {part.name}
+            </div>
+          ))}
         </div>
+      )}
+    </div>
+  </div>
+  <div className="form-group">
+    <label>Quantity:</label>
+    <input type="number" name="quantity" value={itemData.quantity} onChange={handleItemChange} />
+  </div>
+  <div className="form-group">
+    <label>Rate:</label>
+    <input type="number" name="rate" value={itemData.rate} onChange={handleItemChange} />
+  </div>
+  <div className="form-group">
+    <label>GST (%):</label>
+    <input type="number" name="gst" value={formData.gst} onChange={handleInputChange} />
+  </div>
+  <div className="form-group">
+    <label>Total:</label>
+    <input type="number" value={(itemData.quantity * itemData.rate * (1 + formData.gst / 100)).toFixed(2) || 0} readOnly />
+  </div>
+  <button type="button" onClick={addItem}>
+    Add Item
+  </button>
+</div>
 
         <h4>Additional Details</h4>
         <div className="form-row">
@@ -458,6 +550,7 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
         </div>
        
       </form>
+      <ToastContainer />
     </div>
     <Footer />
     </>

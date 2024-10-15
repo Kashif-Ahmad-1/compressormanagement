@@ -26,15 +26,17 @@ const saveChecklist = async (req, res) => {
       return res.status(400).json({ message: 'Checklist data is required.' });
     }
 
-    let appointmentId, clientInfo, invoiceNo, documentNumber;
+    let appointmentId, clientInfo, invoiceNo, documentNumber,machineName,engineerMobile;
 
     // Attempt to parse checklistData
     try {
-      const { appointmentId: id, clientInfo: info, invoiceNo: string, documentNumber: number } = JSON.parse(req.body.checklistData);
+      const { appointmentId: id, clientInfo: info, invoiceNo: string, documentNumber: number,machineName:name,engineerMobile:mobile } = JSON.parse(req.body.checklistData);
       appointmentId = id;
       clientInfo = info;
       invoiceNo = string;
       documentNumber = number;
+      machineName= name;
+      engineerMobile = mobile;
     } catch (jsonError) {
       console.log('JSON parsing error:', jsonError);
       return res.status(400).json({ message: 'Invalid JSON format for checklist data.' });
@@ -81,7 +83,9 @@ const saveChecklist = async (req, res) => {
       appointmentId,
       invoiceNo,
       documentNumber,
-      pdfPath, // Ensure this is set to the Cloudinary URL
+      pdfPath, 
+      machineName,
+      engineerMobile,
       createdBy: req.user.userId,
       invcdocument: counter.count,
     });
@@ -113,8 +117,8 @@ const getAllChecklists = async (req, res) => {
 
     // If admin, fetch all checklists, otherwise fetch only those created by the user
     const checklists = await Checklist.find(isAdmin ? {} : { createdBy: req.user.userId })
-      .populate('appointmentId') // Optionally populate appointment data
-      .sort({ generatedOn: -1 }); // Sort by generatedOn in descending order
+      // .populate('appointmentId') 
+      .sort({ generatedOn: -1 });
 
     res.status(200).json(checklists);
   } catch (error) {

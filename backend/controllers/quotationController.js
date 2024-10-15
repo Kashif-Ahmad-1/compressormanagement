@@ -22,17 +22,19 @@ const saveQuotation = async (req, res) => {
       return res.status(400).json({ message: 'Quotation data is required.' });
     }
 
-    let appointmentId, clientInfo, quotationNo, quotationAmount, items,invoiceNo;
+    let appointmentId, clientInfo, quotationNo, quotationAmount, items,invoiceNo,machineName,engineerMobile;
 
     // Attempt to parse quotationData
     try {
-      const { appointmentId: id, clientInfo: info, quotationNo: string, quotationAmount: amount, items: itemList ,invoiceNo: invoice} = JSON.parse(req.body.quotationData);
+      const { appointmentId: id, clientInfo: info, quotationNo: string, quotationAmount: amount, items: itemList ,invoiceNo: invoice,machineName:Name,engineerMobile:Mobile} = JSON.parse(req.body.quotationData);
       appointmentId = id;
       clientInfo = info;
       quotationNo = string;
       quotationAmount = amount; 
       items = itemList; 
       invoiceNo = invoice;
+      machineName=Name;
+      engineerMobile= Mobile;
     } catch (jsonError) {
       console.log('JSON parsing error:', jsonError);
       return res.status(400).json({ message: 'Invalid JSON format for quotation data.' });
@@ -70,12 +72,14 @@ const saveQuotation = async (req, res) => {
       items, 
       pdfPath,
       invoiceNo,
+      machineName,
+      engineerMobile,
       status: false,
       createdBy: req.user.userId 
     });
 
     const savedQuotation = await newQuotation.save();
-    console.log('Saved quotation:', savedQuotation);
+   
 
     const appointment = await Appointment.findById(appointmentId);
     if (!appointment) {

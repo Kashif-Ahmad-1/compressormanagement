@@ -13,6 +13,8 @@ const checklistSchema = new mongoose.Schema({
   checklist: Array,
   refrigeratorList: Array,
   invoiceNo: String,
+  machineName: { type: String, },
+  engineerMobile: { type: String, },
   documentNumber: String,
   pdfPath: String,
   generatedOn: { type: Date, default: Date.now },

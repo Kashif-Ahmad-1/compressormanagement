@@ -25,6 +25,8 @@ const EditAdminQuotation = () => {
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [spareParts, setSpareParts] = useState([]);
+  const [showSpareParts, setShowSpareParts] = useState(false);
   const [formData, setFormData] = useState({
     clientInfo: { name: "", contactPerson: "", phone: "", address: "" },
     appointmentId: "",
@@ -104,6 +106,26 @@ const EditAdminQuotation = () => {
         [name]: value,
       }));
     }
+  };
+
+  useEffect(() => {
+    const fetchSpareParts = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/spareparts`);
+        setSpareParts(response.data);
+      } catch (error) {
+        console.error('Error fetching spare parts:', error);
+      }
+    };
+    fetchSpareParts();
+  }, []);
+  const handleSparePartSelect = (sparePart) => {
+    setItemData({
+      itemName: sparePart.name,
+      quantity: 1,
+      rate: sparePart.price,
+    });
+    setShowSpareParts(false); // Close spare parts list
   };
 
   const handleItemChange = (index, e) => {
@@ -300,9 +322,13 @@ const uploadPDF = async (id, data) => {
     // console.log('PDF uploaded successfully:', result);
     // console.log("Quotation and PDF uploaded successfully", result.quotation);
     const phone = result.quotation.clientInfo.phone;
-    const pdfUrl = result.quotation.pdfPath; // Get pdfPath from the first checklist object
+    const pdfUrl = result.quotation.pdfPath;
+    const  companyName = result.quotation.clientInfo.name;
+    const MachineName = result.quotation.machineName;
+    const Technician = result.quotation.clientInfo.engineer;
+    const engmobileNumber = result.quotation.engineerMobile;
     // console.log("Extracted PDF URL:", pdfUrl,phone); 
-    await handleSendPdfToMobile(pdfUrl, phone);
+    await handleSendPdfToMobile(pdfUrl, phone,companyName,MachineName,Technician,engmobileNumber);
     
   } catch (error) {
     console.error('Error uploading PDF:', error);
@@ -337,14 +363,14 @@ const handleSubmit = async (e) => {
   }
 };
 
-const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
+const handleSendPdfToMobile = async (pdfUrl, mobileNumber,companyName,MachineName,Technician,engmobileNumber) => {
   try {
     // Fetch templates from the backend
     const response = await axios.get(`${API_BASE_URL}/api/templates`); 
     const { template2 } = response.data; 
 
     // Use the message template function with the PDF URL
-    const message = MessageTemplate(pdfUrl, template2); // Replace {pdfUrl} with the actual URL
+    const message = MessageTemplate(pdfUrl, template2,companyName,MachineName,Technician,engmobileNumber); // Replace {pdfUrl} with the actual URL
 
     const responseWhatsapp = await axios.post(WHATSAPP_CONFIG.url, {
       receiverMobileNo: mobileNumber,
@@ -471,10 +497,42 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
 
         <h4>Add New Item</h4>
         <div className="form-row">
-          <div className="form-group">
-            <label>Item Name:</label>
-            <input type="text" name="itemName" value={itemData.itemName} onChange={(e) => setItemData({ ...itemData, itemName: e.target.value })} />
+        <div className="form-group">
+    <label>Item Name:</label>
+    <div style={{ position: 'relative' }}>
+    <input 
+      type="text" 
+      name="itemName" 
+      value={itemData.itemName} 
+      onChange={(e) => setItemData({ ...itemData, itemName: e.target.value })} 
+      onFocus={() => setShowSpareParts(true)} 
+      style={{ paddingRight: '30px' }}
+    />
+    <span
+     style={{
+      position: 'absolute',
+      right: '10px',
+      top: '50%',
+      transform: 'translateY(-50%)', // Center the icon vertically
+      cursor: 'pointer',
+      color: '#007bff', // Icon color
+      fontSize: '16px', // Adjust size as needed
+    }}
+      onClick={() => setShowSpareParts(!showSpareParts)}
+    >
+      +
+    </span>
+    {showSpareParts && (
+      <div className="spare-parts-list" style={{ position: 'absolute', zIndex: 1, background: 'white', border: '1px solid #ccc', maxHeight: '150px', overflowY: 'auto' }}>
+        {spareParts.map(part => (
+          <div key={part._id} onClick={() => handleSparePartSelect(part)} style={{ padding: '8px', cursor: 'pointer' }}>
+            {part.name}
           </div>
+        ))}
+      </div>
+    )}
+    </div>
+  </div>
           <div className="form-group">
             <label>Quantity:</label>
             <input type="number" name="quantity" value={itemData.quantity} onChange={(e) => setItemData({ ...itemData, quantity: e.target.value })} />

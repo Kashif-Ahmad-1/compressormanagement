@@ -190,8 +190,8 @@ function EngineerDetailsPage() {
         machineName: appointment.machineName,
         serialNo: appointment.serialNo,
         partNo: appointment.partNo,
-        model: appointment.model
-        
+        model: appointment.model,
+        engineerMobile: appointment.engineer.mobileNumber
       },
     });
   };
@@ -227,7 +227,9 @@ function EngineerDetailsPage() {
         mobileNo: appointment.mobileNo,
         address: appointment.clientAddress,
         engineer: appointment.engineer.name,
+        engineerMobile: appointment.engineer.mobileNumber,
         invoiceNumber: appointment.invoiceNumber,
+        machineName: appointment.machineName,
       },
     });
   };

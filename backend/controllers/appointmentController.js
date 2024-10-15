@@ -153,6 +153,7 @@ exports.getAppointments = async (req, res) => {
           ? {
               name: appointment.engineer.name,
               email: appointment.engineer.email,
+              mobileNumber: appointment.engineer.mobileNumber,
             }
           : null,
         createdBy: appointment.createdBy

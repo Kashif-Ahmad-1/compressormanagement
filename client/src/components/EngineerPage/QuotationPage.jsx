@@ -233,18 +233,7 @@ const QuotationAdminPage = () => {
     }
   };
 
-  const openModal = (quotation = null) => {
-    setCurrentQuotation(quotation);
-    setFormData({
-      quotationNo: quotation ? quotation.quotationNo : "",
-      clientName: quotation ? quotation.clientInfo.name : "",
-      contactPerson: quotation ? quotation.clientInfo.contactPerson : "",
-      phone: quotation ? quotation.clientInfo.phone : "",
-      amount: quotation ? quotation.quotationAmount : "",
-      status: quotation ? quotation.status : false,
-    });
-    setModalOpen(true);
-  };
+ 
 
   const closeModal = () => {
     setModalOpen(false);
@@ -311,14 +300,14 @@ const QuotationAdminPage = () => {
     }
   };
 
-  const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
+  const handleSendPdfToMobile = async (pdfUrl, mobileNumber,companyName,MachineName,Technician,engmobileNumber) => {
   try {
     // Fetch templates from the backend
     const response = await axios.get(`${API_BASE_URL}/api/templates`); 
     const { template2 } = response.data; 
 
     // Use the message template function with the PDF URL
-    const message = MessageTemplate(pdfUrl, template2); // Replace {pdfUrl} with the actual URL
+    const message = MessageTemplate(pdfUrl, template2,companyName,MachineName,Technician,engmobileNumber); // Replace {pdfUrl} with the actual URL
 
     const responseWhatsapp = await axios.post(WHATSAPP_CONFIG.url, {
       receiverMobileNo: mobileNumber,
@@ -445,7 +434,11 @@ const QuotationAdminPage = () => {
                                 onClick={() =>
                                   handleSendPdfToMobile(
                                     quotation.pdfPath,
-                                    quotation.clientInfo?.phone
+                                      quotation.clientInfo?.phone,
+                                      quotation.clientInfo.name,
+                                      quotation.machineName,
+                                      quotation.clientInfo.engineer,
+                                      quotation.engineerMobile,
                                   )
                                 }
                                 size="small"
@@ -511,7 +504,11 @@ const QuotationAdminPage = () => {
                                   onClick={() =>
                                     handleSendPdfToMobile(
                                       quotation.pdfPath,
-                                      quotation.clientInfo?.phone
+                                      quotation.clientInfo?.phone,
+                                      quotation.clientInfo.name,
+                                      quotation.machineName,
+                                      quotation.clientInfo.engineer,
+                                      quotation.engineerMobile,
                                     )
                                   }
                                   size="small"

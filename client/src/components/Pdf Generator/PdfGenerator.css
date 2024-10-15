@@ -65,6 +65,18 @@ button {
   justify-content: center;
   align-items: center;
 }
+.spare-parts-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  background-color: white;
+  z-index: 1000;
+}
+
+.spare-parts-list div:hover {
+  background-color: #f0f0f0; /* Highlight on hover */
+}
+
 
 button:hover {
   background-color: #218838;

@@ -48,7 +48,7 @@ const ChecklistPage = () => {
   const [machines, setMachines] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { invoiceNo,machineName,serialNo,partNo ,model} = location.state || {};
+  const { invoiceNo,machineName,serialNo,partNo ,model,engineerMobile} = location.state || {};
   const [template, setTemplate] = useState('');
   const [documentNumber, setDocumentNumber] = useState(0);
 
@@ -88,7 +88,7 @@ const ChecklistPage = () => {
   const fetchMachines = async () => {
     try {
       const token = localStorage.getItem("token"); // Assuming the token is stored in localStorage
-      const response = await axios.get(`${API_BASE_URL}/api/machines`, {
+      const response = await axios.get(`${API_BASE_URL}/api/spareparts`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -250,6 +250,8 @@ const ChecklistPage = () => {
             appointmentId,
             invoiceNo,
             documentNumber,
+            machineName,
+            engineerMobile,
         }));
 
         // Send the checklist data and PDF to the backend
@@ -263,9 +265,15 @@ const ChecklistPage = () => {
 
         console.log("Checklist and PDF uploaded successfully", response.data);
         toast.success("Checklist uploaded successfully")
-        const pdfUrl = response.data.checklist.pdfPath; // Get pdfPath from the response
-        console.log("Extracted PDF URL:", pdfUrl); // Log the extracted URL
-        await handleSendPdfToMobile(pdfUrl,clientInfo.phone)
+        
+        const pdfUrl = response.data.checklist.pdfPath; 
+        const Technician = response.data.checklist.clientInfo.engineer
+        const MachineName = machineName
+        const companyName = response.data.checklist.clientInfo.name
+        
+        console.log("Extracted PDF URL:", pdfUrl,Technician,MachineName,companyName); 
+        await handleSendPdfToMobile(pdfUrl,clientInfo.phone,companyName,MachineName,Technician,engineerMobile)
+        
         
     } catch (error) {
         console.error('Error generating or uploading PDF:', error);
@@ -287,20 +295,20 @@ const ChecklistPage = () => {
             printButton3.style.display = "block";
         }
 
-        window.location.reload();
+        // window.location.reload();
     }
 };
 
 
 
-const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
+const handleSendPdfToMobile = async (pdfUrl, mobileNumber,companyName,MachineName,Technician,engineerMobile) => {
   try {
     // Fetch templates from the backend
     const response = await axios.get(`${API_BASE_URL}/api/templates`); 
     const { template1 } = response.data; 
 
     // Use the message template function with the PDF URL
-    const message = MessageTemplate(pdfUrl, template1); // Replace {pdfUrl} with the actual URL
+    const message = MessageTemplate(pdfUrl, template1,companyName,MachineName,Technician,engineerMobile);
 
     const responseWhatsapp = await axios.post(WHATSAPP_CONFIG.url, {
       receiverMobileNo: mobileNumber,
@@ -922,7 +930,7 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
                   onChange={(e) => handleMachineChange(index, e.target.value)} // Get value directly
                   style={{ width: "100%" }}
                 >
-                  <option value="">Select a machine</option>
+                  <option value="">Select a Spare Part</option>
                   {machines.map((machine, i) => (
                     <option key={i} value={machine._id}>{machine.name}</option>
                   ))}
@@ -934,7 +942,7 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
                   value={part.partNo}
                   onChange={(e) => handleInputChange(index, 'partNo', e.target.value)}
                   style={{ width: "100%" }}
-                  readOnly
+                  
                 />
               </td>
               <td style={{ border: "1px solid #ccc", padding: "5px" }}>
