@@ -261,7 +261,7 @@ const ChecklistPage = () => {
         toast.success("Checklist uploaded successfully")
         const pdfUrl = response.data.checklist.pdfPath; // Get pdfPath from the response
         console.log("Extracted PDF URL:", pdfUrl); // Log the extracted URL
-        // await handleSendPdfToMobile(pdfUrl,clientInfo.phone)
+        await handleSendPdfToMobile(pdfUrl,clientInfo.phone)
         
     } catch (error) {
         console.error('Error generating or uploading PDF:', error);
@@ -366,12 +366,17 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber) => {
       </div>
 
 
-      <div style={{ borderTop: "1px solid black", paddingTop: "10px" }}>
-        <h2 style={{ fontSize: "12px" }}>Field Service Report</h2>
-        <p>Service Report No: <strong>{documentNumber}</strong></p>
-        <br />
-        <p>Date: <strong>{new Date().toLocaleDateString()}</strong></p>
-      </div>
+      <div style={{ borderTop: "1px solid black", paddingTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <div>
+    <h2 style={{ fontSize: "12px" }}>Field Service Report</h2>
+    <p>Service Report No: <strong>{documentNumber}</strong></p>
+    <p>Date: <strong>{new Date().toLocaleDateString()}</strong></p>
+  </div>
+  <div>
+    <p>Invoice No: <strong>{invoiceNo}</strong></p>
+  </div>
+</div>
+
 
       <div style={{ borderTop: "1px solid black", paddingTop: "10px" }}>
         <h3 style={{ fontSize: "10px" ,textAlign: "center",marginLeft: "200px"}}>Equipment Details</h3>
