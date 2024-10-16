@@ -2,7 +2,7 @@ const Machine = require('../models/Machine');
 
 // Add a new machine
 exports.addMachine = async (req, res) => {
-  const { name, quantity, modelNo, partNo } = req.body;
+  const { name, quantity, modelNo, partNo,serialNo } = req.body;
   const { role } = req.user;
 
   if (role !== 'admin' && role !== 'accountant') {
@@ -10,7 +10,7 @@ exports.addMachine = async (req, res) => {
   }
 
   try {
-    const machine = new Machine({ name, quantity ,modelNo, partNo});
+    const machine = new Machine({ name, quantity ,modelNo, partNo,serialNo});
     await machine.save();
     res.status(201).json(machine);
   } catch (error) {
@@ -28,7 +28,7 @@ exports.getMachines = async (req, res) => {
     }
   
     try {
-      const machines = await Machine.find();
+      const machines = await Machine.find().populate('spareparts');
       res.json(machines);
     } catch (error) {
       res.status(500).json({ error: 'Error fetching machines' });

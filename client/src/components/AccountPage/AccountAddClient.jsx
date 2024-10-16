@@ -19,6 +19,8 @@ import {
   Box,
   AppBar,
   Toolbar,
+  Select,
+  MenuItem,
   TablePagination,
   IconButton,
 } from '@mui/material';
@@ -28,7 +30,22 @@ import {API_BASE_URL,WHATSAPP_CONFIG} from './../../config';
 import Footer from "../Footer";
 function AppointmentPage() {
   const navigate = useNavigate();
-
+  const [formData, setFormData] = useState({
+    invoiceNumber: "",
+    clientName: "",
+    clientAddress: "",
+    contactPerson: "",
+    mobileNo: "",
+    appointmentDate: "",
+    appointmentAmount: 0,
+    installationDate: "",
+    serviceFrequency: "",
+    expectedServiceDate: "",
+    engineerId: "",
+    document: null,
+    machines: [{ name: "", model: "", partNo: "", serialNo: "" }], // Array to hold multiple machine details
+  });
+  const [machinesList, setMachinesList] = useState([]);
   const [installationDate, setInstallationDate] = useState("");
   const [serviceFrequency, setServiceFrequency] = useState("");
   const [expectedServiceDate, setExpectedServiceDate] = useState("");
@@ -142,26 +159,36 @@ function AppointmentPage() {
     }
   };
 
-  const handleMachineChange = (e) => {
+  const handleMachineChange = (index, e) => {
     const selectedMachineName = e.target.value;
-    const selectedMachine = machines.find(
-      (machine) => machine.name === selectedMachineName
-    );
-
-    console.log("Selected Machine Name:", selectedMachineName); // Debugging line
-    console.log("Selected Machine Data:", selectedMachine); // Debugging line
-
+    const selectedMachine = machines.find(machine => machine.name === selectedMachineName);
+  
+    const updatedMachines = [...formData.machines];
     if (selectedMachine) {
-      setMachineName(selectedMachine.name);
-      setModelNo(selectedMachine.modelNo); // Update model number
-      setPartNo(selectedMachine.partNo); // Update part number
-      setSerialNo(""); // Optionally reset serial number
+      updatedMachines[index] = {
+        name: selectedMachine.name,
+        model: selectedMachine.modelNo || "", // ensure modelNo is being fetched
+        partNo: selectedMachine.partNo || "", // ensure partNo is being fetched
+        serialNo: selectedMachine.serialNo, // Reset serial number for new selection
+      };
     } else {
-      setMachineName("");
-      setModelNo("");
-      setPartNo("");
-      setSerialNo(""); // Reset serial number if no machine is selected
+      updatedMachines[index] = { name: "", model: "", partNo: "", serialNo: "" };
     }
+  
+    setFormData(prevData => ({ ...prevData, machines: updatedMachines }));
+  };
+  const handleMachineDetailChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedMachines = [...formData.machines];
+    updatedMachines[index] = { ...updatedMachines[index], [name]: value };
+    setFormData((prevData) => ({ ...prevData, machines: updatedMachines }));
+  };
+
+  const addMachine = () => {
+    setFormData((prevData) => ({
+      ...prevData,
+      machines: [...prevData.machines, { name: "", model: "", partNo: "", serialNo: "" }],
+    }));
   };
 
   const validateDates = (installDate, invoiceDate) => {
@@ -217,6 +244,7 @@ function AppointmentPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    for (const machine of formData.machines) {
     const appointmentData = new FormData();
     appointmentData.append("invoiceNumber", invoiceNumber);
     appointmentData.append("clientName", clientName);
@@ -225,16 +253,16 @@ function AppointmentPage() {
     appointmentData.append("mobileNo", mobileNo);
     appointmentData.append("appointmentDate", appointmentDate);
     appointmentData.append("appointmentAmount", appointmentAmount);
-    appointmentData.append("machineName", machineName);
-    appointmentData.append("model", modelNo);
-    appointmentData.append("partNo", partNo);
-    appointmentData.append("serialNo", serialNo);
+    appointmentData.append("machineName", machine.name);
+      appointmentData.append("model", machine.model);
+      appointmentData.append("partNo", machine.partNo);
+      appointmentData.append("serialNo", machine.serialNo);
     appointmentData.append("installationDate", installationDate);
     appointmentData.append("serviceFrequency", serviceFrequency);
     appointmentData.append("expectedServiceDate", expectedServiceDate);
     appointmentData.append("engineer", engineerId);
     appointmentData.append("document", document);
-
+    
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/api/appointments/`, {
@@ -245,7 +273,7 @@ function AppointmentPage() {
         body: appointmentData,
       });
 
-      if (!response.ok) {
+             if (!response.ok) {
         throw new Error("Network response was not ok");
       }
 
@@ -265,6 +293,7 @@ function AppointmentPage() {
         autoClose: 5000,
       });
     }
+  }
   };
 
 
@@ -453,56 +482,43 @@ function AppointmentPage() {
                 required
               />
             </div>
+            {formData.machines.map((machine, index) => (
+  <div key={index}>
+    <TextField
+      name="name"
+      label="Machine Name"
+      value={machine.name}
+      onChange={(e) => handleMachineChange(index, e)}
+      select
+    >
+      {machines.map((m) => (
+        <MenuItem key={m._id} value={m.name}>
+          {m.name}
+        </MenuItem>
+      ))}
+    </TextField>
+    <TextField
+      name="model"
+      label="Model"
+      value={machine.model}
+      onChange={(e) => handleMachineDetailChange(index, e)}
+    />
+    <TextField
+      name="partNo"
+      label="Part No"
+      value={machine.partNo}
+      onChange={(e) => handleMachineDetailChange(index, e)}
+    />
+    <TextField
+      name="serialNo"
+      label="Serial No"
+      value={machine.serialNo}
+      onChange={(e) => handleMachineDetailChange(index, e)}
+    />
+  </div>
+))}
 
-            <div className="form-group">
-              <label htmlFor="machineName">Machine Name:</label>
-              <select
-                id="machineName"
-                value={machineName}
-                onChange={handleMachineChange}
-                required
-              >
-                <option value="">Select a Machine</option>
-                {machines.map((machine) => (
-                  <option key={machine._id} value={machine.name}>
-                    {machine.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="model">Model:</label>
-              <input
-                type="text"
-                id="model"
-                value={modelNo}
-                readOnly // Optional: set to read-only to prevent manual input
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="partNo">Part No.:</label>
-              <input
-                type="text"
-                id="partNo"
-                value={partNo}
-                readOnly // Optional: set to read-only to prevent manual input
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="serialNo">Serial No.:</label>
-              <input
-                type="text"
-                id="serialNo"
-                value={serialNo}
-                onChange={(e) => setSerialNo(e.target.value)}
-                required
-              />
-            </div>
+          <Button onClick={addMachine} startIcon={<Add />}>Add Another Machine</Button>
 
             <div className="form-group">
               <label htmlFor="installationDate">Installation Date:</label>

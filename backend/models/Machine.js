@@ -4,8 +4,10 @@ const machineSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     quantity: { type: String},
-    modelNo: { type: String,required: true },
-    partNo: { type: String,required: true },
+    modelNo: { type: String },
+    partNo: { type: String },
+    serialNo: { type: String },
+    spareparts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Sparepart' }],
   },
   { timestamps: true } // Automatically adds createdAt and updatedAt
 );

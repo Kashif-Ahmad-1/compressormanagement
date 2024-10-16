@@ -1,20 +1,29 @@
 const Sparepart = require('./../models/Sparepart');
+const Machine = require('./../models/Machine');
 
 // Add a spare part
 exports.addSparepart = async (req, res) => {
+  const { machineId, name, quantity, modelNo, partNo, price } = req.body; // Get machineId from the request body
+
   try {
-    const sparepart = new Sparepart(req.body);
+    const sparepart = new Sparepart({ name, quantity, modelNo, partNo, price, machine: machineId });
     await sparepart.save();
+
+    // Update the machine to include the spare part
+    await Machine.findByIdAndUpdate(machineId, { $push: { spareparts: sparepart._id } });
+
     res.status(201).json(sparepart);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-// Get all spare parts
-exports.getSpareparts = async (req, res) => {
+// Get all spare parts for a specific machine
+exports.getSparepartsByMachine = async (req, res) => {
+  const { machineId } = req.body; // Get machineId from request body
+
   try {
-    const spareparts = await Sparepart.find();
+    const spareparts = await Sparepart.find({ machine: machineId });
     res.status(200).json(spareparts);
   } catch (error) {
     res.status(500).json({ message: error.message });

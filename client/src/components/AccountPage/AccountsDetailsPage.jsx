@@ -33,7 +33,7 @@ function AppointmentDetailsPage() {
   const [showAddClientFields, setShowAddClientFields] = useState(false);
   const [showAddMachineField, setShowAddMachineField] = useState(false);
   const [clientData, setClientData] = useState({ name: '', address: '', contact: '', mobileNo: '' });
-  const [machineData, setMachineData] = useState({ name: '',modelNo: '', partNo: '', qty: '' });
+  const [machineData, setMachineData] = useState({ name: '',modelNo: '', partNo: '', qty: '',serialNo: '' });
   const [expandedRows, setExpandedRows] = useState([]);
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
