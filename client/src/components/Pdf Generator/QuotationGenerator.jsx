@@ -362,6 +362,7 @@ const QuotationGenerator = () => {
     const engmobileNumber = engineerMobile
          console.log("Sending PDF to mobile:", pdfUrl, "to", clientInfo.phone,companyName,MachineName,Technician,engmobileNumber); // Debugging line
          await handleSendPdfToMobile(pdfUrl, clientInfo.phone,companyName,MachineName,Technician,engmobileNumber);
+         await handleSendPdfToMobile2(pdfUrl, clientInfo.phone);
          toast.success("PDF sent to mobile successfully!");
   } catch (error) {
     console.error("Error uploading quotation and PDF:", error);
@@ -389,6 +390,27 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber,companyName,MachineNam
     });
 
     toast.success("PDF sent to mobile successfully!");
+  } catch (error) {
+    toast.error("Error sending PDF to mobile!");
+    console.error("WhatsApp Error:", error);
+  }
+};
+const handleSendPdfToMobile2 = async (pdfUrl, mobileNumber) => {
+  try {
+    
+
+     
+    const responseWhatsapp = await axios.post(WHATSAPP_CONFIG.url, {
+      receiverMobileNo: mobileNumber,
+      filePathUrl: [pdfUrl], 
+    }, {
+      headers: {
+        'x-api-key': WHATSAPP_CONFIG.apiKey, 
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log("pdf attachment send")
   } catch (error) {
     toast.error("Error sending PDF to mobile!");
     console.error("WhatsApp Error:", error);

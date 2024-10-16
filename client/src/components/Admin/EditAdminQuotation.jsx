@@ -329,6 +329,7 @@ const uploadPDF = async (id, data) => {
     const engmobileNumber = result.quotation.engineerMobile;
     // console.log("Extracted PDF URL:", pdfUrl,phone); 
     await handleSendPdfToMobile(pdfUrl, phone,companyName,MachineName,Technician,engmobileNumber);
+    await handleSendPdfToMobile2(pdfUrl, phone);
     
   } catch (error) {
     console.error('Error uploading PDF:', error);
@@ -389,6 +390,27 @@ const handleSendPdfToMobile = async (pdfUrl, mobileNumber,companyName,MachineNam
   }
 };
 
+const handleSendPdfToMobile2 = async (pdfUrl, mobileNumber) => {
+  try {
+    
+
+     
+    const responseWhatsapp = await axios.post(WHATSAPP_CONFIG.url, {
+      receiverMobileNo: mobileNumber,
+      filePathUrl: [pdfUrl], 
+    }, {
+      headers: {
+        'x-api-key': WHATSAPP_CONFIG.apiKey, 
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log("pdf attachment send")
+  } catch (error) {
+    toast.error("Error sending PDF to mobile!");
+    console.error("WhatsApp Error:", error);
+  }
+};
 
   const addItem = () => {
     const quantity = parseFloat(itemData.quantity) || 0;

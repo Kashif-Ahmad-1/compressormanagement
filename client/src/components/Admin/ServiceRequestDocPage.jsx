@@ -199,6 +199,28 @@ const ServiceRequestDocPage = () => {
       console.error("WhatsApp Error:", error);
     }
   };
+
+  const handleSendPdfToMobile2 = async (pdfUrl, mobileNumber) => {
+    try {
+      
+  
+       
+      const responseWhatsapp = await axios.post(WHATSAPP_CONFIG.url, {
+        receiverMobileNo: mobileNumber,
+        filePathUrl: [pdfUrl], 
+      }, {
+        headers: {
+          'x-api-key': WHATSAPP_CONFIG.apiKey, 
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      console.log("pdf attachment send")
+    } catch (error) {
+      toast.error("Error sending PDF to mobile!");
+      console.error("WhatsApp Error:", error);
+    }
+  };
   
 
   
@@ -275,7 +297,9 @@ const ServiceRequestDocPage = () => {
                         <IconButton
                             variant="contained"
                             color="primary"
-                            onClick={() => handleSendPdfToMobile(checklist.pdfPath, checklist.clientInfo?.phone,checklist.clientInfo?.name,checklist.machineName,checklist.clientInfo?.engineer,checklist.engineerMobile)}
+                            onClick={() =>{handleSendPdfToMobile2(checklist.pdfPath, checklist.clientInfo?.phone)
+                              handleSendPdfToMobile(checklist.pdfPath, checklist.clientInfo?.phone,checklist.clientInfo?.name,checklist.machineName,checklist.clientInfo?.engineer,checklist.engineerMobile)
+                            } }
                             size="small"
                           >
                             <Send />
