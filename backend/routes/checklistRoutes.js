@@ -1,5 +1,5 @@
 const express = require("express");
-const { saveChecklist, upload,getAllChecklists,editChecklist,deleteChecklist,downloadChecklist,getLastChecklist } = require("../controllers/checklistController");
+const { saveChecklist, upload,getAllChecklists,editChecklist,deleteChecklist,downloadChecklist,getLastChecklist,getChecklistsByAppointmentId } = require("../controllers/checklistController");
 const {authMiddleware} = require('../middleware/authMiddleware');
 const router = express.Router();
 
@@ -10,4 +10,5 @@ router.put("/:id", editChecklist); // New endpoint
 router.delete("/:id",authMiddleware, deleteChecklist);
 router.get('/checklist/download/:id',authMiddleware, downloadChecklist); 
 router.get('/last', getLastChecklist); 
+router.get('/appointment/:appointmentId', authMiddleware,getChecklistsByAppointmentId);
 module.exports = router;

@@ -4,25 +4,13 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./AccountAddPage.css";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
-  Container,
-  Button,
-  Divider,
-  TextField,
-  Box,
-  AppBar,
+   Typography,
+   Button,
+    TextField,
+    AppBar,
   Toolbar,
-  Select,
-  MenuItem,
-  TablePagination,
-  IconButton,
+    MenuItem,
+    IconButton,
 } from '@mui/material';
 import { Add, Download, Menu } from '@mui/icons-material';
 import logo from './comp-logo.jpeg';
@@ -43,7 +31,7 @@ function AppointmentPage() {
     expectedServiceDate: "",
     engineerId: "",
     document: null,
-    machines: [{ name: "", model: "", partNo: "", serialNo: "" }], // Array to hold multiple machine details
+    machines: [{ machineId: "", model: "", partNo: "", serialNo: "" }], // Array to hold multiple machine details
   });
   const [machinesList, setMachinesList] = useState([]);
   const [installationDate, setInstallationDate] = useState("");
@@ -102,7 +90,7 @@ function AppointmentPage() {
           },
         });
         const data = await response.json();
-        setMachines(data);
+        setMachinesList(data);
       } catch (error) {
         console.error("Error fetching machines:", error);
       }
@@ -160,21 +148,19 @@ function AppointmentPage() {
   };
 
   const handleMachineChange = (index, e) => {
-    const selectedMachineName = e.target.value;
-    const selectedMachine = machines.find(machine => machine.name === selectedMachineName);
-  
+    const selectedMachineId = e.target.value;
+    const selectedMachine = machinesList.find(machine => machine._id === selectedMachineId);
+
     const updatedMachines = [...formData.machines];
     if (selectedMachine) {
       updatedMachines[index] = {
-        name: selectedMachine.name,
-        model: selectedMachine.modelNo || "", // ensure modelNo is being fetched
-        partNo: selectedMachine.partNo || "", // ensure partNo is being fetched
-        serialNo: selectedMachine.serialNo, // Reset serial number for new selection
+        machineId: selectedMachine._id,
+        model: selectedMachine.modelNo || "",
+        partNo: selectedMachine.partNo || "",
+        serialNo: selectedMachine.serialNo || "",
       };
-    } else {
-      updatedMachines[index] = { name: "", model: "", partNo: "", serialNo: "" };
     }
-  
+
     setFormData(prevData => ({ ...prevData, machines: updatedMachines }));
   };
   const handleMachineDetailChange = (index, e) => {
@@ -185,9 +171,9 @@ function AppointmentPage() {
   };
 
   const addMachine = () => {
-    setFormData((prevData) => ({
+    setFormData(prevData => ({
       ...prevData,
-      machines: [...prevData.machines, { name: "", model: "", partNo: "", serialNo: "" }],
+      machines: [...prevData.machines, { machineId: "", model: "", partNo: "", serialNo: "" }],
     }));
   };
 
@@ -243,58 +229,87 @@ function AppointmentPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    for (const machine of formData.machines) {
-    const appointmentData = new FormData();
-    appointmentData.append("invoiceNumber", invoiceNumber);
-    appointmentData.append("clientName", clientName);
-    appointmentData.append("clientAddress", clientAddress);
-    appointmentData.append("contactPerson", contactPerson);
-    appointmentData.append("mobileNo", mobileNo);
-    appointmentData.append("appointmentDate", appointmentDate);
-    appointmentData.append("appointmentAmount", appointmentAmount);
-    appointmentData.append("machineName", machine.name);
-      appointmentData.append("model", machine.model);
-      appointmentData.append("partNo", machine.partNo);
-      appointmentData.append("serialNo", machine.serialNo);
-    appointmentData.append("installationDate", installationDate);
-    appointmentData.append("serviceFrequency", serviceFrequency);
-    appointmentData.append("expectedServiceDate", expectedServiceDate);
-    appointmentData.append("engineer", engineerId);
-    appointmentData.append("document", document);
-    
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/api/appointments/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: appointmentData,
-      });
-
-             if (!response.ok) {
-        throw new Error("Network response was not ok");
+  
+    // Create the base appointment data object (without machineId)
+    const baseAppointmentData = {
+      invoiceNumber,
+      clientName,
+      clientAddress,
+      contactPerson,
+      mobileNo,
+      appointmentDate,
+      appointmentAmount,
+      installationDate,
+      serviceFrequency,
+      expectedServiceDate,
+      engineer: engineerId,
+    };
+  
+    // Create a new FormData instance
+    const appointmentPromises = formData.machines.map(async (machine) => {
+      const appointmentData = {
+        ...baseAppointmentData,
+        machineId: machine.machineId, // Set the machineId for this appointment
+      };
+  
+      // Create FormData for each appointment
+      const formDataForAppointment = new FormData();
+      
+      // Append the appointment data
+      for (const [key, value] of Object.entries(appointmentData)) {
+        formDataForAppointment.append(key, value);
       }
-
+  
+      // Append the document if it exists
+      if (document) {
+        formDataForAppointment.append("document", document);
+      }
+  
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_BASE_URL}/api/appointments/`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Do not set Content-Type for FormData, it will be set automatically
+          },
+          body: formDataForAppointment,
+        });
+  
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to create appointment");
+        }
+  
+        return response.json(); // Return the created appointment data
+      } catch (error) {
+        throw new Error(`Failed to save appointment data for machine ${machine.machineId}: ${error.message}`);
+      }
+    });
+  
+    // Wait for all appointments to be created
+    try {
+      await Promise.all(appointmentPromises);
       localStorage.removeItem("appointmentDraft");
-
-      toast.success("Appointment booked successfully!", {
+      toast.success("Appointments booked successfully!", {
         position: "top-right",
         autoClose: 5000,
       });
-
+  
       setTimeout(() => {
         navigate("/accountspage");
       }, 3000);
     } catch (error) {
-      toast.error("Failed to save appointment data.", {
+      toast.error(error.message, {
         position: "top-right",
         autoClose: 5000,
       });
     }
-  }
   };
+  
+
+  
+  
 
 
   useEffect(() => {
@@ -484,19 +499,19 @@ function AppointmentPage() {
             </div>
             {formData.machines.map((machine, index) => (
   <div key={index}>
+    
     <TextField
-      name="name"
-      label="Machine Name"
-      value={machine.name}
-      onChange={(e) => handleMachineChange(index, e)}
-      select
-    >
-      {machines.map((m) => (
-        <MenuItem key={m._id} value={m.name}>
-          {m.name}
-        </MenuItem>
-      ))}
-    </TextField>
+                  select
+                  label="Machine"
+                  value={machine.machineId}
+                  onChange={(e) => handleMachineChange(index, e)}
+                >
+                  {machinesList.map(m => (
+                    <MenuItem key={m._id} value={m._id}>
+                      {m.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
     <TextField
       name="model"
       label="Model"

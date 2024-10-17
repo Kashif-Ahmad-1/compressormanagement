@@ -265,6 +265,31 @@ const getLastChecklist = async (req, res) => {
   }
 };
 
+const getChecklistsByAppointmentId = async (req, res) => {
+  try {
+    const { appointmentId } = req.params; // Get the appointment ID from the URL parameters
+    console.log("Fetching checklists for appointment ID:", appointmentId); // Log the ID
+
+    const checklists = await Checklist.find({ appointmentId })
+      .populate('createdBy', 'name email') // Optionally populate user details
+      .sort({ generatedOn: -1 }); // Sort by generatedOn in descending order
+
+    console.log("Found checklists:", checklists); // Log the retrieved checklists
+
+    if (!checklists.length) {
+      return res.status(404).json({ message: 'No checklists found for this appointment.' });
+    }
+
+    res.status(200).json(checklists);
+  } catch (error) {
+    console.error('Error fetching checklists by appointment ID:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+
 module.exports = {
   saveChecklist,
   upload,
@@ -272,5 +297,6 @@ module.exports = {
   editChecklist,
   deleteChecklist, 
   downloadChecklist, 
-  getLastChecklist,  // Export the new function
-};
+  getLastChecklist,  
+  getChecklistsByAppointmentId,
+}

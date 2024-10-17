@@ -1,8 +1,9 @@
 const Machine = require('../models/Machine');
 
 // Add a new machine
+// Add a new machine
 exports.addMachine = async (req, res) => {
-  const { name, quantity, modelNo, partNo,serialNo } = req.body;
+  const { name, quantity, modelNo, partNo, serialNo, type } = req.body; // Include type
   const { role } = req.user;
 
   if (role !== 'admin' && role !== 'accountant') {
@@ -10,13 +11,14 @@ exports.addMachine = async (req, res) => {
   }
 
   try {
-    const machine = new Machine({ name, quantity ,modelNo, partNo,serialNo});
+    const machine = new Machine({ name, quantity, modelNo, partNo, serialNo, type }); // Include type
     await machine.save();
     res.status(201).json(machine);
   } catch (error) {
     res.status(500).json({ error: 'Error adding machine' });
   }
 };
+
 
 
 // Get a machine

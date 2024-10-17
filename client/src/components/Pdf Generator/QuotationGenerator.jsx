@@ -2,7 +2,7 @@ import React, { useState, useRef,useEffect } from "react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import "./PdfGenerator.css";
-import { useLocation } from "react-router-dom";
+import { useLocation,useParams  } from "react-router-dom";
 import axios from "axios";
 import logo from './comp-logo.jpeg';
 import {API_BASE_URL,WHATSAPP_CONFIG} from './../../config';
@@ -37,33 +37,38 @@ const Header = ({ onToggleSidebar }) => (
 );
 
 const QuotationGenerator = () => {
+  const { id,appointmentId } = useParams();
   const formRef = useRef();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { clientName, contactPerson, address, mobileNo, appointmentId,invoiceNumber,engineer,engineerMobile,machineName } = location.state || {};
+  const [appointmentDetails, setAppointmentDetails] = useState({});
   const [spareParts, setSpareParts] = useState([]);
   const [showSpareParts, setShowSpareParts] = useState(false);
   const generateQuotationNo = () => "QT" + Math.floor(Math.random() * 100000);
   const formatDate = (date) => date.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit" });
-
+  
   const [clientInfo, setClientInfo] = useState({
-    name: clientName || "",
-    contactPerson: contactPerson || "",
-    phone: mobileNo || "",
-    address: address || "",
-    appointmentId: appointmentId || "",
-    engineer: engineer || "",
+    name: "",
+    contactPerson: "",
+    phone: "",
+    address: "",
+    engineer: "",
   });
-
-  const handleToggleSidebar = () => {
-    setSidebarOpen((prev) => !prev);
-  };
 
   const [itemData, setItemData] = useState({
     itemName: "",
     quantity: "",
     rate: "",
   });
+
+
+
+
+  const handleToggleSidebar = () => {
+    setSidebarOpen((prev) => !prev);
+  };
+
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -183,14 +188,14 @@ const QuotationGenerator = () => {
 
 
   const [formData, setFormData] = useState({
-    buyerName: clientName || "",
+    buyerName: "",
     quotationNo: generateQuotationNo(),
-    quotationAmount: "",  // Store total amount here
+    quotationAmount: "",
     docDate: formatDate(new Date()),
-    address: address || "",
-    contactPerson: contactPerson || "",
-    mobileNo: mobileNo || "",
-    invoiceNumber: invoiceNumber || "",
+    address: "",
+    contactPerson: "",
+    mobileNo: "",
+    invoiceNumber: "",
     email: "",
     items: [],
     gst: 18,
@@ -198,11 +203,48 @@ const QuotationGenerator = () => {
     totalWithGST: 0,
     advance: "",
     validity: "",
-    authorisedSignatory: engineer || "",
-    engineer: engineer || "",
-    machineName: machineName || "",
-    engineerMobile: engineerMobile || "",
+    authorisedSignatory: "",
+    machineName: "",
+    engineerMobile: "",
   });
+
+  useEffect(() => {
+    const fetchAppointmentDetails = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`${API_BASE_URL}/api/appointments/${appointmentId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`, // Replace with your actual token or header
+            'Content-Type': 'application/json', // Example of setting content type
+          },
+        });
+        const details = response.data;
+        setAppointmentDetails(details);
+        setClientInfo({
+          name: details.clientName,
+          contactPerson: details.contactPerson,
+          phone: details.mobileNo,
+          address: details.clientAddress,
+          engineer: details.engineer?.name,
+        });
+        setFormData((prevData) => ({
+          ...prevData,
+          buyerName: details.clientName,
+          address: details.clientAddress,
+          contactPerson: details.contactPerson,
+          mobileNo: details.mobileNo,
+          invoiceNumber: details.invoiceNumber,
+          authorisedSignatory: details.engineer?.name,
+          machineName: details.machineName,
+          engineerMobile: details.engineer?.mobileNumber,
+        }));
+      } catch (error) {
+        console.error('Error fetching appointment details:', error);
+      }
+    };
+    fetchAppointmentDetails();
+  }, [appointmentId]);
+  
 
 
  const generatePDF = async () => {
@@ -356,18 +398,18 @@ const QuotationGenerator = () => {
     const pdfUrl = response.data.quotation.pdfPath; 
     console.log("Extracted PDF URL:", pdfUrl); 
    
-    const companyName = clientName
-    const MachineName = machineName
-    const Technician = engineer
-    const engmobileNumber = engineerMobile
+    const companyName = clientInfo.name
+    const MachineName = formData.machineName
+    const Technician = clientInfo.engineer
+    const engmobileNumber = formData.engineerMobile
          console.log("Sending PDF to mobile:", pdfUrl, "to", clientInfo.phone,companyName,MachineName,Technician,engmobileNumber); // Debugging line
-         await handleSendPdfToMobile(pdfUrl, clientInfo.phone,companyName,MachineName,Technician,engmobileNumber);
-         await handleSendPdfToMobile2(pdfUrl, clientInfo.phone);
+        //  await handleSendPdfToMobile(pdfUrl, clientInfo.phone,companyName,MachineName,Technician,engmobileNumber);
+        //  await handleSendPdfToMobile2(pdfUrl, clientInfo.phone);
          toast.success("PDF sent to mobile successfully!");
   } catch (error) {
     console.error("Error uploading quotation and PDF:", error);
   }
-  // doc.save("quotation.pdf");
+  doc.save("quotation.pdf");
 };
 
 

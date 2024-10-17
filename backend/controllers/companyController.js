@@ -2,7 +2,7 @@ const Company = require('../models/Company');
 
 // Add a new company
 exports.addCompany = async (req, res) => {
-  const { clientName, contactPerson,mobileNo,clientAddress } = req.body;
+  const { clientName, contactPerson, mobileNo, clientAddress } = req.body;
   const { role } = req.user;
 
   if (role !== 'admin' && role !== 'accountant') {
@@ -10,13 +10,21 @@ exports.addCompany = async (req, res) => {
   }
 
   try {
-    const company = new Company({ clientName, contactPerson,mobileNo,clientAddress });
+    // Check for an existing company with the same clientName and contactPerson
+    const existingCompany = await Company.findOne({ clientName, contactPerson });
+    if (existingCompany) {
+      return res.status(400).json({ error: 'Company with the same name and contact person already exists.' });
+    }
+
+    // Create the new company
+    const company = new Company({ clientName, contactPerson, mobileNo, clientAddress });
     await company.save();
     res.status(201).json(company);
   } catch (error) {
     res.status(500).json({ error: 'Error adding company' });
   }
 };
+
 
 // Get all companies (for admin and accountant)
 exports.getCompanies = async (req, res) => {

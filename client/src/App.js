@@ -31,6 +31,7 @@ import EditQuotation from "./components/EngineerPage/EditQuotation";
 import EditAdminQuotation from "./components/Admin/EditAdminQuotation";
 
 
+
 function App() {
   // const role = localStorage.getItem("role");
   // console.log(role);
@@ -99,7 +100,7 @@ function App() {
           
           
           <Route
-            path="/quotation-generate"
+            path="/quotation-generate/:appointmentId"
             element={<PrivateRoute element={QuotationGenerator} roles={["engineer"]} />}
           />
           <Route
@@ -127,6 +128,7 @@ function App() {
           <Route path="/reset/:token" element={<ResetPassword />} />
          
           <Route path="/templatemanager" element={<TemplateManager />} />
+          
          
           
          

@@ -6,7 +6,18 @@ exports.addSparepart = async (req, res) => {
   const { machineId, name, quantity, modelNo, partNo, price } = req.body; // Get machineId from the request body
 
   try {
-    const sparepart = new Sparepart({ name, quantity, modelNo, partNo, price, machine: machineId });
+    // Construct the new name by combining name and modelNo
+    const updatedName = `${name}_${modelNo}`;
+
+    const sparepart = new Sparepart({ 
+      name: updatedName, // Use the concatenated name
+      quantity, 
+      modelNo, 
+      partNo, 
+      price, 
+      machine: machineId 
+    });
+
     await sparepart.save();
 
     // Update the machine to include the spare part
@@ -17,6 +28,7 @@ exports.addSparepart = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
 
 // Get all spare parts for a specific machine
 exports.getSparepartsByMachine = async (req, res) => {

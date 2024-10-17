@@ -5,7 +5,7 @@ const User = require("../models/User");
 const Company = require("../models/Company");
 const { google } = require('googleapis');
 const { PassThrough } = require('stream'); 
-
+const Machine =require('../models/Machine')
 const drive = google.drive('v3');
 
 // Multer configuration for file uploads
@@ -30,90 +30,93 @@ exports.createAppointment = async (req, res) => {
     mobileNo,
     appointmentDate,
     appointmentAmount,
-    machineName,
-    model,
-    partNo,
-    serialNo,
+    machineId,
     installationDate,
     serviceFrequency,
     expectedServiceDate,
     engineer,
-    invoiceNumber,
+    invoiceNumber
   } = req.body;
 
   const { role } = req.user;
 
-  // Only allow appointments to be created by accountants or engineers
+  // Check user role
   if (role !== "accountant" && role !== "engineer") {
     return res.status(403).json({ error: "Access denied" });
   }
 
+  // Validate required fields
+  const requiredFields = [clientName, mobileNo, appointmentDate, machineId, engineer];
+  for (const field of requiredFields) {
+    if (!field) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+  }
+
   try {
+    // Verify engineer
     const engineerUser = await User.findById(engineer);
     if (!engineerUser || engineerUser.role !== "engineer") {
       return res.status(400).json({ error: "Invalid engineer selected" });
     }
-  } catch (error) {
-    return res.status(400).json({ error: "Error verifying engineer" });
-  }
 
-  try {
+    // Find or create company
     let company = await Company.findOne({ clientName, mobileNo });
-
     if (!company) {
-      company = new Company({
-        clientName,
-        contactPerson,
-        mobileNo,
-        clientAddress,
-      });
+      company = new Company({ clientName, contactPerson, mobileNo, clientAddress });
       await company.save();
     }
 
-   // Upload file to Google Drive
-   let document = null;
-   if (req.file) {
-     const authClient = await authenticateGoogleDrive();
-     const clientNames = clientName.replace(/\s+/g, '_'); // Replace spaces with underscores
-     const fileName = `${invoiceNumber}.pdf`;
-     const fileMetadata = {
-       name: fileName, // Use the quotation number or other relevant info
-       mimeType: 'application/pdf',
-       parents: [process.env.GOOGLE_DRIVE_INVOICEDOC_ID], // Replace with your folder ID
-     };
+    // Handle file upload to Google Drive
+    let document = null;
+    if (req.file) {
+      const authClient = await authenticateGoogleDrive();
+      const clientNames = clientName.replace(/\s+/g, '_');
+      const fileName = `${invoiceNumber}.pdf`;
+      const fileMetadata = {
+        name: fileName,
+        mimeType: 'application/pdf',
+        parents: [process.env.GOOGLE_DRIVE_INVOICEDOC_ID],
+      };
 
-     const bufferStream = new PassThrough();
-     bufferStream.end(req.file.buffer); // Convert buffer to stream
+      const bufferStream = new PassThrough();
+      bufferStream.end(req.file.buffer);
 
-     const media = {
-       mimeType: 'application/pdf',
-       body: bufferStream,
-     };
+      const media = {
+        mimeType: 'application/pdf',
+        body: bufferStream,
+      };
 
-     try {
-       const driveResponse = await drive.files.create({
-         auth: authClient,
-         requestBody: fileMetadata,
-         media: media,
-       });
+      try {
+        const driveResponse = await drive.files.create({
+          auth: authClient,
+          requestBody: fileMetadata,
+          media: media,
+        });
 
-       // Set permissions to make the file accessible
-       await drive.permissions.create({
-         auth: authClient,
-         fileId: driveResponse.data.id,
-         requestBody: {
-           role: 'reader', // Allows read access
-           type: 'anyone', // Makes the file publicly accessible
-         },
-       });
+        await drive.permissions.create({
+          auth: authClient,
+          fileId: driveResponse.data.id,
+          requestBody: {
+            role: 'reader',
+            type: 'anyone',
+          },
+        });
 
-       document = `https://drive.google.com/uc?id=${driveResponse.data.id}`; // Get the file link
-     } catch (error) {
-       console.error('Google Drive upload error:', error.message || error);
-       return res.status(500).json({ message: error.message || 'Failed to upload PDF to Google Drive.' });
-     }
-   }
+        document = `https://drive.google.com/uc?id=${driveResponse.data.id}`;
+      } catch (uploadError) {
+        console.error('Google Drive upload error:', uploadError.message || uploadError);
+        return res.status(500).json({ message: uploadError.message || 'Failed to upload PDF to Google Drive.' });
+      }
+    }
 
+    // Verify machine
+    const machine = await Machine.findById(machineId);
+    if (!machine) {
+      return res.status(400).json({ error: "Invalid machine selected" });
+    }
+
+    // Create the appointment
     const appointment = new Appointment({
       clientName,
       clientAddress,
@@ -121,27 +124,30 @@ exports.createAppointment = async (req, res) => {
       mobileNo,
       appointmentDate,
       appointmentAmount,
-      machineName,
-      model,
-      partNo,
-      serialNo,
+      machineId,
+      machineName: machine.name,
+      model: machine.modelNo,
+      partNo: machine.partNo,
+      serialNo: machine.serialNo,
       installationDate,
       serviceFrequency,
       expectedServiceDate,
-      nextServiceDate: expectedServiceDate, // Set nextServiceDate to expectedServiceDate initially
+      nextServiceDate: expectedServiceDate,
       engineer,
       createdBy: req.user.userId,
-      document,
       invoiceNumber,
+      document // Optionally include the document URL
     });
 
     await appointment.save();
     res.status(201).json(appointment);
   } catch (error) {
-    console.error(error);
-    res.status(400).json({ error: "Error creating appointment" });
+    console.error('Error creating appointment:', error);
+    res.status(500).json({ error: "Error creating appointment" });
   }
 };
+
+
 
 // Get all appointments (Accountant/Admin)
 exports.getAppointments = async (req, res) => {
@@ -152,54 +158,47 @@ exports.getAppointments = async (req, res) => {
 
     if (role === "admin") {
       appointments = await Appointment.find()
-        .populate("engineer createdBy checklists quotations");
+        .populate("engineer createdBy checklists quotations machineId"); // Populate machine details
     } else if (role === "accountant") {
-      appointments = await Appointment.find({ createdBy: userId }) // Only appointments created by this accountant
-        .populate("engineer createdBy checklists quotations");
+      appointments = await Appointment.find({ createdBy: userId })
+        .populate("engineer createdBy checklists quotations machineId");
     } else if (role === "engineer") {
       appointments = await Appointment.find({ engineer: userId })
-        .populate("createdBy engineer checklists quotations");
+        .populate("createdBy engineer checklists quotations machineId");
     } else {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const transformedAppointments = appointments.map((appointment) => {
-      return {
-        ...appointment.toObject(),
-        engineer: appointment.engineer
-          ? {
-              name: appointment.engineer.name,
-              email: appointment.engineer.email,
-              mobileNumber: appointment.engineer.mobileNumber,
-            }
-          : null,
-        createdBy: appointment.createdBy
-          ? {
-              name: appointment.createdBy.name,
-              email: appointment.createdBy.email,
-            }
-          : null,
-        checklists: appointment.checklists.map((checklist) => ({
-          id: checklist._id,
-          clientInfo: checklist.clientInfo,
-          invoiceNo: checklist.invoiceNo,
-          pdfPath: checklist.pdfPath,
-          generatedOn: checklist.generatedOn,
-        })),
-        quotations: appointment.quotations.map((quotation) => ({
-          id: quotation._id,
-          clientInfo: quotation.clientInfo,
-          quotationNo: quotation.quotationNo,
-          quotationAmount: quotation.quotationAmount,
-          pdfPath: quotation.pdfPath,
-        })),
-      };
-    });
-
-    res.json(transformedAppointments);
+    res.json(appointments);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error fetching appointments" });
+  }
+};
+
+
+// Get appointment by ID
+exports.getAppointmentById = async (req, res) => {
+  const { id } = req.params; // Get the appointment ID from the URL parameters
+  const { role } = req.user; // Get the user role from the request
+
+  // Check user permissions (adjust according to your authorization logic)
+  if (role !== "admin" && role !== "engineer" && role !== "accountant") {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  try {
+    const appointment = await Appointment.findById(id)
+      .populate("engineer createdBy checklists quotations machineId"); // Optionally populate related data
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Appointment not found" });
+    }
+
+    res.status(200).json(appointment); // Send the appointment details
+  } catch (error) {
+    console.error('Error fetching appointment:', error);
+    res.status(500).json({ error: "Error fetching appointment" });
   }
 };
 
@@ -340,6 +339,35 @@ exports.getAppointmentStatistics = async (req, res) => {
 };
 
 
+
+// Get appointments by invoice number
+exports.getAppointmentsByInvoice = async (req, res) => {
+  const { invoiceNumber } = req.params;
+
+  try {
+    // Find all appointments with the given invoice number
+    const appointments = await Appointment.find({ invoiceNumber }).populate("engineer createdBy");
+
+    if (!appointments.length) {
+      return res.status(404).json({ message: "No appointments found for this invoice number." });
+    }
+
+    // Transform appointments to return only machine details
+    const transformedAppointments = appointments.map((appointment) => {
+      return {
+        machineName: appointment.machineName,
+        model: appointment.model,
+        partNo: appointment.partNo,
+        serialNo: appointment.serialNo,
+      };
+    });
+
+    res.json(transformedAppointments);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error fetching appointments by invoice number." });
+  }
+};
 
 // Export the multer upload instance for use in routes
 exports.upload = upload;

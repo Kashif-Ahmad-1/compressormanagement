@@ -110,7 +110,20 @@ const ChecklistPage = () => {
       { description: '', partNo: '', qty: '', otherDetails: '' }
     ]);
   };
-
+  const addConsumePart = () => {
+    setConsumeParts([
+      ...consumeParts,
+      { description: '', partNo: '', qty: '', otherDetails: '' }
+    ]);
+  };
+  const deleteConsumePart = (index) => {
+    const updatedParts = consumeParts.filter((_, i) => i !== index);
+    setConsumeParts(updatedParts);
+  };
+  const deleteSparePart = (index) => {
+    const updatedParts = spareParts.filter((_, i) => i !== index);
+    setSpareParts(updatedParts);
+  };
 
   const handleMachineChange = (index, machineId) => {
     const selectedMachine = machines.find(machine => machine._id === machineId);
@@ -127,20 +140,7 @@ const ChecklistPage = () => {
     setSpareParts(newParts);
   };
 
-  const addConsumePart = () => {
-    setConsumeParts([
-      ...consumeParts,
-      { description: '', partNo: '', qty: '', otherDetails: '' }
-    ]);
-  };
-  const deleteConsumePart = (index) => {
-    const updatedParts = consumeParts.filter((_, i) => i !== index);
-    setConsumeParts(updatedParts);
-  };
-  const deleteSparePart = (index) => {
-    const updatedParts = spareParts.filter((_, i) => i !== index);
-    setSpareParts(updatedParts);
-  };
+  
   const handleCheckboxChange = (index) => {
     const updatedRemarks = remarksData.map((item, i) =>
       i === index ? { ...item, done: !item.done } : item

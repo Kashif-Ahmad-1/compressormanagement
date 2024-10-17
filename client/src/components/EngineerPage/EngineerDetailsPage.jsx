@@ -219,7 +219,7 @@ function EngineerDetailsPage() {
   };
 
   const handleQuotation = (appointment) => {
-    navigate(`/quotation-generate`, {
+    navigate(`/quotation-generate/${appointment._id}`, {
       state: {
         appointmentId: appointment._id,
         clientName: appointment.clientName,

@@ -9,14 +9,15 @@ import {
   TextField,
   IconButton,
   Modal,
+  MenuItem
 } from '@mui/material';
-import {API_BASE_URL} from './../../config';
+import { API_BASE_URL } from './../../config';
 import { styled } from '@mui/material/styles';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Edit, Delete } from '@mui/icons-material';
+import { Edit, Delete, Add } from '@mui/icons-material';
 
 const MainContent = styled('main')(({ theme }) => ({
   flexGrow: 1,
@@ -83,9 +84,20 @@ const MachinePage = () => {
     quantity: '',
     modelNo: '',
     partNo: '',
+    serialNo: '',
+    type: '' // New field
+  });
+  
+  const [newSparePart, setNewSparePart] = useState({
+    name: '',
+    quantity: '',
+    modelNo: '',
+    partNo: '',
+    price: '',
   });
   const [editingMachineId, setEditingMachineId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [sparePartModalOpen, setSparePartModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [machinesPerPage] = useState(15);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -126,7 +138,8 @@ const MachinePage = () => {
       (machine.name && machine.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (machine.quantity && machine.quantity.toString().includes(searchQuery)) ||
       (machine.modelNo && machine.modelNo.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (machine.partNo && machine.partNo.toLowerCase().includes(searchQuery.toLowerCase()))
+      (machine.partNo && machine.partNo.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (machine.serialNo && machine.serialNo.toLowerCase().includes(searchQuery.toLowerCase()))
     ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     setFilteredMachines(results);
@@ -135,6 +148,11 @@ const MachinePage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNewMachine((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSparePartChange = (e) => {
+    const { name, value } = e.target;
+    setNewSparePart((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -214,6 +232,34 @@ const MachinePage = () => {
     }
   };
 
+  const handleAddSparePart = async (machineId) => {
+    const token = localStorage.getItem('token');
+
+    const sparePartData = {
+      ...newSparePart,
+      machineId: machineId,
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/spareparts`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sparePartData),
+      });
+      if (!response.ok) throw new Error('Failed to add spare part');
+      const addedSparePart = await response.json();
+      toast.success('Spare part added successfully!');
+    } catch (error) {
+      toast.error(error.message || 'Error adding spare part');
+    }
+
+    setSparePartModalOpen(false);
+    setNewSparePart({ name: '', quantity: '', modelNo: '', partNo: '', price: '' });
+  };
+
   // Pagination Logic
   const indexOfLastMachine = currentPage * machinesPerPage;
   const indexOfFirstMachine = indexOfLastMachine - machinesPerPage;
@@ -228,118 +274,208 @@ const MachinePage = () => {
       <MainContent>
         <ToolbarSpacer />
         <Container>
+        
           <SectionTitle variant="h4">Search By Type</SectionTitle>
 
-          {/* Search Box */}
           <TextField
             label="Machine Model Part No."
             variant="outlined"
             fullWidth
             onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ mb: 2 }}
           />
+
           <ButtonContainer>
-            <Button variant="contained" color="primary" onClick={() => setModalOpen(true)}>
+            <Button variant="contained" onClick={() => setModalOpen(true)}>
               Add Machine
             </Button>
           </ButtonContainer>
 
-          {/* Modal for Add/Edit Machine */}
-          <Modal
-            open={modalOpen}
-            onClose={() => setModalOpen(false)}
-          >
+          <Table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                
+                <th>Model No.</th>
+                <th>Part No.</th>
+                <th>Actions</th>
+                <th>Spare Parts</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentMachines.map(machine => (
+                <tr key={machine._id}>
+                  <td>{machine.name}</td>
+                  
+                  <td>{machine.modelNo}</td>
+                  <td>{machine.partNo}</td>
+                  <td>
+                    <IconButton onClick={() => handleEdit(machine)}>
+                      <Edit />
+                    </IconButton>
+                    <IconButton onClick={() => handleDelete(machine._id)}>
+                      <Delete />
+                    </IconButton>
+                  </td>
+                  <td>
+                    <Button variant="outlined" onClick={() => {
+                      setNewSparePart({ name: '', quantity: '', modelNo: '', partNo: '', price: '' });
+                      setEditingMachineId(machine._id); 
+                      setSparePartModalOpen(true);
+                    }}>
+                      Add Spare Part
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+
+          <PaginationContainer>
+            <Button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Prev
+            </Button>
+            <Typography>
+              Page {currentPage} of {totalPages}
+            </Typography>
+            <Button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </PaginationContainer>
+
+          <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
             <Box sx={modalStyle}>
-              <Typography variant="h6" align="center">{editingMachineId ? 'Edit Machine' : 'Add New Machine'}</Typography>
+              <Typography variant="h6">{editingMachineId ? 'Edit Machine' : 'Add Machine'}</Typography>
               <form onSubmit={handleSubmit}>
+              <TextField
+  select
+  label="Type"
+  name="type"
+  value={newMachine.type}
+  onChange={handleChange}
+  fullWidth
+  required
+>
+  <MenuItem value="compressor">Compressor</MenuItem>
+  <MenuItem value="dryer">Dryer</MenuItem>
+  <MenuItem value="filter">Filter</MenuItem>
+</TextField>
+
                 <TextField
-                 type="string"
-                  label="Machine Name"
+                type="string"
+                  label="Name"
                   name="name"
                   value={newMachine.name}
                   onChange={handleChange}
-                  sx={{ mb: 1, width: '90%' }}
+                  fullWidth
                   required
                 />
+             
                 <TextField
-                 type="string"
+                type="string"
                   label="Model No."
                   name="modelNo"
                   value={newMachine.modelNo}
                   onChange={handleChange}
-                  sx={{ mb: 1, width: '90%' }}
+                  fullWidth
                   required
                 />
                 <TextField
-                 type="string"
+                type="string"
                   label="Part No."
                   name="partNo"
                   value={newMachine.partNo}
                   onChange={handleChange}
-                  sx={{ mb: 1, width: '90%' }}
+                  fullWidth
                   required
                 />
-                <Button type="submit" variant="contained" color="primary" sx={{ width: '90%' }}>
-                  {editingMachineId ? 'Update Machine' : 'Add Machine'}
+                <TextField
+                type="string"
+                  label="Serial No."
+                  name="serialNo"
+                  value={newMachine.serialNo}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                />
+                <Button type="submit" variant="contained">
+                  Submit
                 </Button>
               </form>
             </Box>
           </Modal>
 
-          <Card>
-            <Typography sx={{ fontWeight: "bold" }} variant="h4">List Of All Existing Machines</Typography>
-            <Paper sx={{ overflowX: 'auto', mt: 2 }}>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>SR No</th>
-                    <th>Machine Name</th>
-                    <th>Model No.</th>
-                    <th>Part No.</th>
-                    <th>Edit</th>
-                    <th>Delete</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentMachines.map((machine, index) => (
-                    <tr key={machine._id}>
-                      <td>{indexOfFirstMachine + index + 1}</td>
-                      <td>{machine.name}</td>
-                      <td>{machine.modelNo}</td>
-                      <td>{machine.partNo}</td>
-                      <td>
-                        <IconButton variant="contained" color="secondary" sx={{ mr: 1 }} onClick={() => handleEdit(machine)}>
-                          <Edit fontSize='small' />
-                        </IconButton>
-                      </td>
-                      <td>
-                        <IconButton variant="outlined" color="error" onClick={() => handleDelete(machine._id)}>
-                          <Delete fontSize='small' />
-                        </IconButton>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </Paper>
-            <PaginationContainer>
-              <Button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => prev - 1)}
-              >
-                Previous
-              </Button>
-              <Button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => prev + 1)}
-              >
-                Next
-              </Button>
-            </PaginationContainer>
-          </Card>
+          <Modal open={sparePartModalOpen} onClose={() => setSparePartModalOpen(false)}>
+  <Box sx={modalStyle}>
+    <Typography variant="h6">Add Spare Part</Typography>
+    <form onSubmit={(e) => { 
+      e.preventDefault(); 
+      handleAddSparePart(editingMachineId);  // Use the machine ID stored in editingMachineId
+    }}>
+      <TextField
+      type="string"
+        label="Name"
+        name="name"
+        value={newSparePart.name}
+        onChange={handleSparePartChange}
+        fullWidth
+        required
+      />
+      <TextField
+      type="string"
+        label="Quantity"
+        name="quantity"
+        value={newSparePart.quantity}
+        onChange={handleSparePartChange}
+        fullWidth
+        required
+        
+      />
+      <TextField
+      type="string"
+        label="Model No."
+        name="modelNo"
+        value={newSparePart.modelNo}
+        onChange={handleSparePartChange}
+        fullWidth
+        required
+      />
+      <TextField
+      type="string"
+        label="Part No."
+        name="partNo"
+        value={newSparePart.partNo}
+        onChange={handleSparePartChange}
+        fullWidth
+        required
+      />
+      <TextField
+      type="string"
+        label="Price"
+        name="price"
+        value={newSparePart.price}
+        onChange={handleSparePartChange}
+        fullWidth
+        required
+        
+      />
+      <Button type="submit" variant="contained">
+        Add Spare Part
+      </Button>
+    </form>
+  </Box>
+</Modal>
+
+
+          <ToastContainer />
+          
         </Container>
       </MainContent>
-      <ToastContainer />
     </Box>
   );
 };
